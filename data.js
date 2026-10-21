@@ -50,7 +50,7 @@ const games = [
     packages: [
       { amount: 800,    price: 3.50,   old: 8.99 },
       { amount: 2400,   price: 9.96,   old: 22.99 },
-      { amount: 4500,   price: 14.84,  old: 36.99, badge: "popular" },
+      { amount: 4500,   price: 14.99,  old: 36.99, badge: "popular" },
       { amount: 9000,   price: 25.00,  old: 73.98 },
       { amount: 12500,  price: 31.99,  old: 89.99 },
       { amount: 25000,  price: 64.00,  old: 179.98 },
