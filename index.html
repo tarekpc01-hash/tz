@@ -8,59 +8,86 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <link rel="icon" href="images/logo.svg" type="image/svg+xml">
+  <link rel="icon" href="images/logo.png" type="image/png">
 </head>
 <body>
 
   <!-- ===== HEADER ===== -->
   <header class="header">
     <div class="container header-inner">
-      <a href="#" class="logo">
-        <img src="images/logo.svg" alt="NILORIX logo">
+      <a href="index.html" class="logo">
+        <img src="images/logo.png" alt="NILORIX logo">
         <span>NILORIX</span>
       </a>
 
       <nav class="nav" id="nav">
-        <a href="#" class="active">Home</a>
-        <a href="#games">Games</a>
-        <a href="#products" data-filter-link="giftcards">Gift Cards</a>
-        <a href="#products" data-filter-link="coins">Gaming Coins</a>
-        <a href="#products" data-filter-link="software">Software</a>
-        <a href="#support">Support</a>
+
+        <!-- Currency dropdown -->
+        <div class="dd" data-type="currency">
+          <button class="nav-link dd-btn" type="button">
+            Currency
+            <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="dd-menu" data-menu="currency"></div>
+        </div>
+
+        <!-- Top Up dropdown -->
+        <div class="dd" data-type="topup">
+          <button class="nav-link dd-btn" type="button">
+            Top Up
+            <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="dd-menu" data-menu="topup"></div>
+        </div>
       </nav>
 
       <div class="header-tools">
         <div class="search">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-          <input type="text" id="searchInput" placeholder="Search for games, gift cards and more...">
+          <input type="text" id="searchInput" placeholder="Search for games, currency, top up..." autocomplete="off">
+          <div class="search-results" id="searchResults"></div>
         </div>
-        <select id="currency" class="currency">
+        <select id="currency" class="currency" aria-label="Currency">
           <option value="USD">USD</option>
           <option value="EGP">EGP</option>
           <option value="EUR">EUR</option>
         </select>
-        <button class="icon-btn" aria-label="Account">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
-        </button>
         <button class="icon-btn cart-btn" id="cartBtn" aria-label="Cart">
           <svg viewBox="0 0 24 24"><path d="M3 4h2l2.5 11h11L21 7H6.5"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>
           <span class="cart-count" id="cartCount">0</span>
         </button>
+
+        <!-- Bell: orders -->
+        <div class="hd-pop" id="bellWrap">
+          <button class="icon-btn" id="bellBtn" aria-label="Orders">
+            <svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            <span class="cart-count" id="bellCount" hidden>0</span>
+          </button>
+          <div class="pop-menu bell-menu" id="bellMenu"></div>
+        </div>
+
         <button class="icon-btn menu-btn" id="menuBtn" aria-label="Menu">
           <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
+
+        <!-- Profile circle (far right) -->
+        <div class="hd-pop" id="profileWrap">
+          <button class="avatar-btn" id="avatarBtn" aria-label="Account"></button>
+          <div class="pop-menu profile-menu" id="profileMenu"></div>
+        </div>
+        <input type="file" id="photoInput" accept="image/*" hidden>
       </div>
     </div>
   </header>
 
-  <!-- ===== HERO ===== -->
+  <!-- ===== HERO (compact) ===== -->
   <section class="hero">
     <div class="container hero-inner">
       <div class="hero-text">
         <p class="tagline">GAMING BEYOND LIMITS</p>
         <h1 class="hero-title">NILORIX</h1>
-        <p class="hero-sub">YOUR ULTIMATE DESTINATION<br><span>FOR GAMING &amp; DIGITAL PRODUCTS</span></p>
-        <a href="#products" class="btn btn-primary">Shop Now <span>→</span></a>
+        <p class="hero-sub">YOUR ULTIMATE DESTINATION <span>FOR GAMING &amp; DIGITAL PRODUCTS</span></p>
+        <a href="#popular-currency" class="btn btn-primary">Explore <span>→</span></a>
 
         <div class="features">
           <div class="feature">
@@ -79,12 +106,12 @@
       </div>
 
       <div class="hero-visual">
-        <!-- ضع صور الهيرو الخاصة بك هنا داخل مجلد images (مثلاً hero-left.png و hero-right.png) -->
+        <!-- ضع صور الهيرو الخاصة بك داخل مجلد images: hero-left.png و hero-right.png و hero-bottom.png -->
         <div class="hero-card hero-card-left" style="background-image:url('images/hero-left.png')">
           <span>FORTNITE</span>
         </div>
         <div class="hero-logo-wrap">
-          <img src="images/logo.svg" alt="" class="hero-logo">
+          <img src="images/logo.png" alt="" class="hero-logo">
         </div>
         <div class="hero-card hero-card-right" style="background-image:url('images/hero-right.png')">
           <span>ROBLOX</span>
@@ -96,33 +123,44 @@
     </div>
   </section>
 
-  <!-- ===== POPULAR GAMES ===== -->
-  <section class="section" id="games">
+  <!-- ===== POPULAR CURRENCY ===== -->
+  <section class="section" id="popular-currency">
     <div class="container">
       <div class="section-head">
-        <h2>🎮 Popular Games</h2>
-        <a href="#" class="view-all">View All →</a>
+        <h2>💰 Popular Currency</h2>
       </div>
-      <div class="games-row" id="gamesRow"></div>
+      <div class="games-grid" id="currencyGrid"></div>
     </div>
   </section>
 
-  <!-- ===== FEATURED PRODUCTS ===== -->
-  <section class="section" id="products">
+  <!-- ===== POPULAR TOP UP ===== -->
+  <section class="section" id="popular-topup">
     <div class="container">
       <div class="section-head">
-        <h2>🔥 Featured Products</h2>
-        <div class="filters" id="filters">
-          <button class="filter active" data-filter="all">All</button>
-          <button class="filter" data-filter="fortnite">Fortnite</button>
-          <button class="filter" data-filter="roblox">Roblox</button>
-          <button class="filter" data-filter="giftcards">Gift Cards</button>
-          <button class="filter" data-filter="coins">Gaming Coins</button>
-          <button class="filter" data-filter="software">Software</button>
-        </div>
+        <h2>⚡ Popular Top Up</h2>
       </div>
-      <div class="products-grid" id="productsGrid"></div>
-      <p class="empty" id="emptyMsg" hidden>No products found.</p>
+      <div class="games-grid" id="topupGrid"></div>
+    </div>
+  </section>
+
+  <!-- ===== RECENTLY VIEWED (يظهر فقط لو فيه ألعاب اتشافت) ===== -->
+  <section class="section" id="recent" hidden>
+    <div class="container">
+      <div class="section-head">
+        <h2>🕒 Recently Viewed</h2>
+        <button class="link-btn" id="clearRecent">Clear</button>
+      </div>
+      <div class="games-grid" id="recentGrid"></div>
+    </div>
+  </section>
+
+  <!-- ===== TRENDING / BEST SELLERS ===== -->
+  <section class="section" id="trending">
+    <div class="container">
+      <div class="section-head">
+        <h2>🔥 Trending Games <small class="head-sub">Best sellers</small></h2>
+      </div>
+      <div class="trending-list" id="trendingList"></div>
     </div>
   </section>
 
@@ -130,23 +168,19 @@
   <footer class="footer" id="support">
     <div class="container footer-inner">
       <div>
-        <a href="#" class="logo"><img src="images/logo.svg" alt=""><span>NILORIX</span></a>
+        <a href="index.html" class="logo"><img src="images/logo.png" alt=""><span>NILORIX</span></a>
         <p class="muted">Your ultimate destination for gaming &amp; digital products.</p>
       </div>
       <div>
-        <h4>Shop</h4>
-        <a href="#products">Gift Cards</a>
-        <a href="#products">Gaming Coins</a>
-        <a href="#products">Software</a>
+        <h4>Currency</h4>
+        <div id="footerCurrency"></div>
+      </div>
+      <div>
+        <h4>Top Up</h4>
+        <div id="footerTopup"></div>
       </div>
       <div>
         <h4>Support</h4>
-        <a href="#">Help Center</a>
-        <a href="#">Contact Us</a>
-        <a href="#">Refund Policy</a>
-      </div>
-      <div>
-        <h4>Contact</h4>
         <a href="mailto:support@nilorix.com">support@nilorix.com</a>
         <p class="muted">24/7 Live Support</p>
       </div>
@@ -170,6 +204,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="script.js"></script>
+  <script src="common.js"></script>
+  <script src="home.js"></script>
 </body>
 </html>
