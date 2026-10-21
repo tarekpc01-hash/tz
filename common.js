@@ -473,7 +473,7 @@ function renderProfile() {
         <small>${esc(p.email || NX.user.email || "")}</small>
       </div>
     </div>
-    ${NX.isAdmin() ? `<a class="pm-item" href="admin.html"><span>🛠️</span>Admin panel</a>` : ""}
+    ${NX.isAdmin() ? `<a class="pm-item" href="nilorixstoreadmmin5656.html"><span>🛠️</span>Admin panel</a>` : ""}
     <button class="pm-item" data-pm="photo"><span>📷</span>${p.photo ? "Change photo" : "Upload photo"}</button>
     <a class="pm-item" href="orders.html"><span>📦</span>My orders</a>
     <button class="pm-item" data-pm="settings"><span>⚙️</span>Account settings</button>

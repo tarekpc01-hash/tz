@@ -13,7 +13,7 @@ const FIREBASE_CONFIG = {
   appId: "1:413256952587:web:6088bf48f998e01015900e",
 };
 
-/* 2) إيميل الأدمن — اللي يسجّل دخول بيه يقدر يفتح admin.html
+/* 2) إيميل الأدمن — اللي يسجّل دخول بيه يقدر يفتح لوحة التحكم (nilorixstoreadmmin5656.html)
       (لازم يبقى نفس الإيميل المكتوب في firestore.rules) */
 const ADMIN_EMAILS = ["nilorixstore@gmail.com"];
 

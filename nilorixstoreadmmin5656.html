@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — NILORIX</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="images/logo.png" type="image/png">
+</head>
+<body class="admin">
+
+  <header class="header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo"><img src="images/logo.png" alt=""><span>NILORIX</span><em class="adm-tag">Admin</em></a>
+      <div class="header-tools">
+        <span class="adm-user" id="admUser"></span>
+        <a class="btn btn-ghost adm-small" href="index.html">View store</a>
+        <button class="btn btn-ghost adm-small" id="admOut" hidden>Sign out</button>
+      </div>
+    </div>
+  </header>
+  <script src="logo.js"></script>
+
+  <!-- not signed in -->
+  <main class="container page" id="admLogin" hidden>
+    <div class="panel adm-login">
+      <img src="images/logo.png" alt="" class="lg-logo">
+      <h3>Admin sign in</h3>
+      <form id="admLoginForm">
+        <label>Email<input type="email" id="admEmail" required></label>
+        <label>Password<input type="password" id="admPass" required></label>
+        <p class="lg-err" id="admErr" hidden></p>
+        <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+      </form>
+      <div class="lg-or"><span>or</span></div>
+      <button class="btn btn-ghost btn-block" id="admGoogle">Continue with Google</button>
+    </div>
+  </main>
+
+  <!-- signed in but not admin / not configured -->
+  <main class="container page" id="admDenied" hidden>
+    <div class="not-found"><h2 id="admDeniedTitle">Not authorized</h2><p class="muted" id="admDeniedText">This account isn't an admin.</p></div>
+  </main>
+
+  <!-- panel -->
+  <main class="container page" id="admMain" hidden>
+    <div class="adm-views">
+      <button class="adm-view active" data-view="orders">🛒 Orders <b id="admViewOrders"></b></button>
+      <button class="adm-view" data-view="support">💬 Support <b id="admViewSupport"></b></button>
+    </div>
+
+    <!-- SUPPORT inbox -->
+    <div id="admSupport" hidden>
+      <div class="adm-bar"><div class="filters" id="supTabs"></div></div>
+      <div class="adm-grid">
+        <div class="adm-list" id="supList"></div>
+        <aside class="adm-detail panel" id="supDetail"><p class="panel-sub">Select a conversation.</p></aside>
+      </div>
+    </div>
+
+    <div id="admOrders">
+    <div class="adm-stats" id="admStats"></div>
+
+    <div class="adm-bar">
+      <div class="filters" id="admTabs"></div>
+      <input type="search" class="adm-search" id="admSearch" placeholder="Search order #, email, TXID…">
+    </div>
+
+    <div class="adm-grid">
+      <div class="adm-list" id="admList"></div>
+      <aside class="adm-detail panel" id="admDetail">
+        <p class="panel-sub">Select an order to see the details.</p>
+      </aside>
+    </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="config.js"></script>
+  <script src="assets.js"></script>
+  <script src="data.js"></script>
+  <script src="backend.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
