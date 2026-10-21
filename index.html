@@ -1,9 +1,44 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#111018"><meta name="description" content="Nilorix — game credits, gift cards and digital gaming essentials."><title>Nilorix — Level Up Your Game</title><link rel="icon" href="favicon.svg"><link rel="stylesheet" href="styles.css"></head><body>
-<div class="announcement">✦ &nbsp; YOUR NEXT LEVEL STARTS HERE <span>Digital gaming essentials, all in one place.</span></div>
-<header><a class="brand" href="#"><img class="brand-logo" src="nilorix-logo.png" alt="Nilorix logo"> nilorix<span>.</span></a><nav><a href="#shop">Shop</a><a href="#categories">Categories</a><a href="#about">Why Nilorix</a></nav><button id="cartOpen" class="cartbtn">Cart <b id="count">0</b></button></header>
-<main><section class="hero"><div class="heroText"><small>✦ &nbsp; THE DIGITAL GAMING STORE</small><h1>Play more.<br><em>Level up.</em></h1><p>Your favorite game credits, gift cards, and digital essentials — all in one place. Ready when you are.</p><a class="primary" href="#shop">Explore the store <b>↗</b></a><div class="micro">✳ Built for players, powered by possibility.</div></div><div class="art"><div class="ring r1"></div><div class="ring r2"></div><img class="hero-logo" src="nilorix-logo.png" alt="Nilorix logo"><label class="float top">● &nbsp; DIGITAL GOODS</label><label class="float bottom">ϟ &nbsp; NEXT LEVEL UNLOCKED</label><span class="spark">✦</span></div><div class="scroll">DISCOVER YOUR NEXT FAVORITE <span>━━━━━━━━━━━━</span> SCROLL TO EXPLORE ↓</div></section>
-<section class="trust" id="about"><div>✳ <b>Digital-first</b><small>Made for modern gamers</small></div><div>◇ <b>Easy to explore</b><small>Find your next top-up</small></div><div>↗ <b>Global-minded</b><small>Gaming beyond borders</small></div></section>
-<section class="shop" id="shop"><div class="heading"><div><small>✦ &nbsp; THE DROP ZONE</small><h2>Find your <em>next level.</em></h2><p>Explore digital picks for your gaming world.</p></div><input id="search" placeholder="⌕  Search games and gift cards..." aria-label="Search products"></div><div class="filters" id="categories"><button class="active" data-cat="All">All products</button><button data-cat="Game Credits">Game credits</button><button data-cat="Gift Cards">Gift cards</button><button data-cat="Subscriptions">Subscriptions</button><span>● DEMO CATALOG</span></div><div id="products" class="grid"></div><div id="empty" hidden>No products found. Try another search.</div></section>
-<section class="banner"><img class="promo-logo" src="nilorix-logo.png" alt="Nilorix logo"><div><small>YOUR GAME. YOUR RULES.</small><h2>Ready when <em>you are.</em></h2><p>Discover digital essentials to keep your gaming journey moving.</p></div><a href="#shop">Explore products ↗</a></section><section class="newsletter"><div><small>✦ &nbsp; STAY IN THE LOOP</small><h2>Good things are <em>loading.</em></h2><p>Get updates when new products land. Signup is a visual demo for now.</p></div><form id="news"><input type="email" placeholder="Enter your email address" required><button>Notify me →</button></form></section></main>
-<footer><a class="brand" href="#"><img class="brand-logo" src="nilorix-logo.png" alt="Nilorix logo"> nilorix<span>.</span></a><span>Digital gaming, next level.</span><nav><a href="#shop">Shop</a><a href="#about">About</a><a href="mailto:hello@nilorix.com">Contact</a></nav><small>© <span id="year"></span> Nilorix. Demo storefront — no real payments.</small></footer>
-<div id="shade"></div><aside id="drawer"><div class="drawhead"><div><small>YOUR SELECTION</small><h2>Your cart <span id="drawcount">(0)</span></h2></div><button id="close">×</button></div><div id="items"></div><div class="drawfoot"><div class="subtotal">Subtotal <b id="total">$0.00</b></div><p>Demo only: checkout and payments are not enabled.</p><button id="checkout">Continue to checkout ↗</button><button id="continue">Continue shopping</button></div></aside><div id="toast"></div><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#030914"><meta name="description" content="Nilorix — digital gaming currency and top-ups."><title>Nilorix — Gaming Beyond Limits</title><link rel="icon" href="favicon.svg"><link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#"><img src="nilorix-logo.png" alt="Nilorix"><span>NILORIX</span></a>
+  <nav class="main-nav">
+    <div class="navdrop"><button class="nav-trigger" aria-expanded="false">Currency <span>⌄</span></button><div class="dropdown"><strong>Currency</strong><a href="#product/ps99">Pet Simulator 99</a><a href="#product/bladeball">Blade Ball Tokens</a><a href="#product/robux">Roblox Robux</a></div></div>
+    <div class="navdrop"><button class="nav-trigger" aria-expanded="false">Top up <span>⌄</span></button><div class="dropdown"><strong>Top up</strong><a href="#product/fortnite">Fortnite</a><a href="#product/apex">Apex Legends</a><a href="#product/ea">EA Sports Points</a><a href="#product/pokemon">Pokémon GO Top Up</a><a href="#product/genshin">Genshin Impact Top Up</a></div></div>
+  </nav>
+  <label class="searchbox"><span>⌕</span><input id="search" placeholder="Search for games, currency, or top up…" aria-label="Search products"></label>
+  <button class="currency-btn" aria-label="Currency">◎ <span>USD</span>⌄</button>
+  <button id="cartOpen" class="icon-btn cart-icon" aria-label="Cart">🛒<b id="count">0</b></button>
+  <button id="bell" class="icon-btn bell-icon" aria-label="Notifications">🔔<b class="bell-dot" id="bellDot"></b></button>
+  <button id="profile" class="profile-btn" aria-label="Account"><span class="avatar">👤</span><span class="profile-chevron">⌄</span></button>
+</header>
+<main id="main">
+  <section id="homeView">
+    <section class="hero">
+      <div class="hero-copy"><div class="eyebrow">GAMING BEYOND LIMITS</div><h1>NILORIX</h1><p class="hero-sub">YOUR ULTIMATE DESTINATION<br>FOR GAMING &amp; DIGITAL PRODUCTS</p><a class="primary-btn" href="#catalog">Shop Now <span>→</span></a><div class="hero-benefits"><div><b>ϟ</b><span><strong>Instant Delivery</strong><small>Digital goods, made simple</small></span></div><div><b>⬟</b><span><strong>Secure Payments</strong><small>Crypto checkout planned</small></span></div><div><b>☏</b><span><strong>Customer Support</strong><small>We're here to help</small></span></div></div></div>
+      <div class="hero-mark"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><img src="nilorix-logo.png" alt="Nilorix emblem"></div>
+    </section>
+    <section class="catalog" id="catalog">
+      <div class="section-title"><div><span class="section-icon">✦</span><h2>Currency</h2></div><span class="section-note">Explore digital currency</span></div>
+      <div class="product-grid compact" id="currencyGrid"></div>
+      <div class="section-title topup-title"><div><span class="section-icon">⚡</span><h2>Top up</h2></div><span class="section-note">Game top-ups</span></div>
+      <div class="product-grid compact" id="topupGrid"></div>
+      <div class="section-title recent-title"><div><span class="section-icon">◷</span><h2>Recently Visited</h2></div></div>
+      <div class="product-grid compact" id="recentGrid"><div class="empty-mini">Your recently visited products will appear here.</div></div>
+      <div class="popular-wrap"><div class="section-title"><div><span class="section-icon">✦</span><h2>Popular Currency</h2></div></div><div class="product-grid compact" id="popularCurrency"></div><div class="section-title topup-title"><div><span class="section-icon">✦</span><h2>Popular Top up</h2></div></div><div class="product-grid compact" id="popularTopup"></div></div>
+    </section>
+  </section>
+  <section id="productView" hidden></section>
+  <section id="infoView" hidden></section>
+</main>
+<footer class="footer"><a class="brand footer-brand" href="#"><img src="nilorix-logo.png" alt=""><span>NILORIX</span></a><span class="tagline">Gaming Beyond Limits</span><nav><a href="#info/how">How it works</a><a href="#info/support">Support</a><a href="#info/about">About</a></nav><small>© <span id="year"></span> Nilorix. Demo storefront.</small></footer>
+<button class="support-fab" id="supportFab" aria-label="Contact customer support"><span>◉</span><small>Support</small></button>
+<div id="toast" role="status"></div>
+<div id="shade"></div><aside id="drawer" aria-label="Shopping cart"><div class="drawhead"><div><small>YOUR SELECTION</small><h2>Your cart <span id="drawerCount">(0)</span></h2></div><button id="close" aria-label="Close cart">×</button></div><div id="cartItems"></div><div class="drawfoot"><div class="subtotal">Subtotal <b id="total">$0.00</b></div><p>Crypto checkout is a design preview. No payment will be processed.</p><button id="checkout" class="primary-btn full">Continue to checkout →</button><button id="continue" class="secondary-btn">Continue shopping</button></div></aside>
+<div class="popover-panel" id="notifications"><strong>Notifications</strong><p>You’ll see order updates here after an order system is connected.</p></div><div class="popover-panel" id="accountMenu"><strong>Your account</strong><button id="signIn">Sign in / Create account</button><a href="#info/support">Support</a></div>
+<script src="app.js"></script>
+</body></html>
