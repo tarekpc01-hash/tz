@@ -21,6 +21,7 @@ function cryptoAmount(m) {
 
 /* ---------- render ---------- */
 function renderCheckout() {
+  coItems.forEach(i => { const pk = pkgFor(i.g, i.p, i.amt); if (pk) i.pk = pk; });   // latest prices
   if (!coItems.length) { $("#coGrid").hidden = true; $("#coEmpty").hidden = false; return; }
 
   /* setup warnings */
@@ -121,6 +122,9 @@ $("#placeBtn").addEventListener("click", async () => {
   const amt = cryptoAmount(payMethod);
   if (amt == null) return coError("LTC rate isn't loaded yet — try again in a moment.");
 
+  await window.pricesReady;   // make sure we use the latest prices from the admin panel
+  if (coItems.some(i => !pkgFor(i.g, i.p, i.amt))) return coError("One of the packages isn't available anymore — please go back and pick again.");
+  coItems.forEach(i => { i.pk = pkgFor(i.g, i.p, i.amt); });
   await requireLogin("Sign in or create an account to place your order.");
 
   const btn = $("#placeBtn"); btn.disabled = true; btn.textContent = "Placing order…";

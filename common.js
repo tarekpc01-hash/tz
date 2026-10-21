@@ -499,6 +499,54 @@ function readPhoto(file) {
   });
 }
 
+/* =========================================================
+   🛡️ Photo safety check — blocks explicit (porn / hentai) profile photos
+   Runs inside the visitor's browser with NSFWJS (open-source, MIT).
+   The photo never leaves the browser for this check. The model (~6 MB) loads
+   only the first time someone uploads a photo.
+   ========================================================= */
+const NSFW_LIBS = [
+  "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js",
+  "https://cdn.jsdelivr.net/npm/nsfwjs@4.2.1/dist/models/mobilenet_v2/model.min.js",
+  "https://cdn.jsdelivr.net/npm/nsfwjs@4.2.1/dist/models/mobilenet_v2/group1-shard1of1.min.js",
+  "https://cdn.jsdelivr.net/npm/nsfwjs@4.2.1/dist/browser/nsfwjs.min.js",
+];
+let nsfwModel = null;
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    if ([...document.scripts].some(s => s.src === src)) return res();
+    const s = document.createElement("script");
+    s.src = src; s.async = false; s.crossOrigin = "anonymous";
+    s.onload = res; s.onerror = () => rej(new Error("load " + src));
+    document.head.appendChild(s);
+  });
+}
+async function getNsfwModel() {
+  if (nsfwModel) return nsfwModel;
+  for (const src of NSFW_LIBS) await loadScript(src);
+  nsfwModel = await nsfwjs.load("MobileNetV2");
+  return nsfwModel;
+}
+/* true = OK to use · false = explicit · throws if the check couldn't run */
+async function photoIsSafe(dataUrl) {
+  const model = await getNsfwModel();
+  const img = new Image();
+  await new Promise((r, j) => { img.onload = r; img.onerror = j; img.src = dataUrl; });
+  const preds = await model.classify(img);
+  const p = Object.fromEntries(preds.map(x => [x.className, x.probability]));
+  const explicit = (p.Porn || 0) + (p.Hentai || 0);
+  return !(explicit >= 0.4 || (p.Sexy || 0) >= 0.7);
+}
+async function checkedPhoto(file) {
+  const data = await readPhoto(file);          // resize first (also rejects non-images)
+  toast("🛡️ Checking photo…");
+  let ok;
+  try { ok = await photoIsSafe(data); }
+  catch (err) { console.error(err); toast("Couldn't check this photo — please try again in a moment."); return null; }
+  if (!ok) { toast("🚫 This photo isn't allowed. Please choose another one."); return null; }
+  return data;
+}
+
 let photoTarget = "profile";   // "profile" or "settings"
 let draftPhoto = "";
 
@@ -506,7 +554,8 @@ $("#photoInput").addEventListener("change", async e => {
   const file = e.target.files[0];
   e.target.value = "";
   try {
-    const data = await readPhoto(file);
+    const data = await checkedPhoto(file);
+    if (!data) return;
     if (photoTarget === "settings") { draftPhoto = data; paintSettingsPhoto(); }
     else { await NX.saveProfile({ photo: data }); toast("📷 Photo updated"); }
   } catch { toast("Please choose an image file"); }
@@ -798,6 +847,11 @@ NX.onAuth(user => {
   renderBell();
   if (window.onAuthChange) window.onAuthChange(user);
 });
+
+/* أسعار لوحة التحكم — الصفحة بتتحدّث أول ما توصل، والدفع بيستناها */
+window.pricesReady = NX.enabled
+  ? NX.loadPrices().then(p => { applyPrices(p); renderMenus(); renderCart(); if (window.pageRender) window.pageRender(); })
+  : Promise.resolve();
 
 if (NX.enabled) {
   Promise.all([NX.loadReviews(), NX.loadSales()]).then(([r, s]) => {

@@ -117,6 +117,12 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // ---------- prices set from the admin panel (public read) ----------
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // ---------- public store stats (orders count) ----------
     match /stats/{doc} {
       allow read: if true;

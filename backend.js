@@ -180,6 +180,15 @@ const NX = (() => {
     try { const d = await db.collection("stats").doc("sales").get(); return d.exists ? d.data() : {}; }
     catch (e) { console.error(e); return {}; }
   }
+  /* ---------- prices set from the admin panel (public read) ---------- */
+  async function loadPrices() {
+    try { const d = await db.collection("config").doc("prices").get(); return d.exists ? d.data() : {}; }
+    catch (e) { console.error(e); return {}; }
+  }
+  const savePrices = (obj) => db.collection("config").doc("prices").set(obj);
+
+  /* لوحة التحكم بتكتب الأرقام الحقيقية هنا (عدد الأوردرات + المبيعات لكل لعبة) */
+  const setStats = (obj) => db.collection("stats").doc("sales").set(obj);
   async function addSales(counts) {
     const ref = db.collection("stats").doc("sales");
     const d = await ref.get();
@@ -212,6 +221,6 @@ const NX = (() => {
     enabled, onAuth, get user() { return user; }, get profile() { return profile; }, isAdmin, isAdminEmail, sendVerification, reloadUser,
     errText, signUp, signIn, signInGoogle, resetPassword, signOut, saveProfile,
     createOrder, watchMyOrders, watchOrder, updateOrder, submitPayment, cancelOrder, markReceived, openDispute,
-    watchMessages, sendMessage, createTicket, watchMyTickets, watchAllTickets, watchTicketMessages, sendTicketMessage, setTicketStatus, loadReviews, addReview, loadSales, addSales, watchAllOrders, notifyOwner,
+    watchMessages, sendMessage, createTicket, watchMyTickets, watchAllTickets, watchTicketMessages, sendTicketMessage, setTicketStatus, loadReviews, addReview, loadSales, addSales, setStats, loadPrices, savePrices, watchAllOrders, notifyOwner,
   };
 })();

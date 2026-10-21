@@ -48,10 +48,10 @@ const games = [
     g: "linear-gradient(150deg,#ffb020,#ea580c)", sold: 0, img: "images/games/fortnite.png", reviews: [],
     about: "Top up V-Bucks for skins, emotes and the Battle Pass.",
     packages: [
-      { amount: 800,    price: 3.99,   old: 8.99 },
+      { amount: 800,    price: 3.50,   old: 8.99 },
       { amount: 2400,   price: 9.96,   old: 22.99 },
-      { amount: 4500,   price: 14.99,  old: 36.99, badge: "popular" },
-      { amount: 9000,   price: 26.00,  old: 73.98 },
+      { amount: 4500,   price: 14.84,  old: 36.99, badge: "popular" },
+      { amount: 9000,   price: 25.00,  old: 73.98 },
       { amount: 12500,  price: 31.99,  old: 89.99 },
       { amount: 25000,  price: 64.00,  old: 179.98 },
       { amount: 50000,  price: 124.99, old: 359.96 },
@@ -87,9 +87,9 @@ const games = [
       { amount: 500,   price: 6.84 },
       { amount: 1050,  price: 10.90 },
       { amount: 1600,  price: 14.59,  old: 14.99 },
-      { amount: 2800,  price: 23.90,  old: 24.99 },
-      { amount: 5900,  price: 42.50,  old: 49.99,  badge: "popular" },
-      { amount: 12000, price: 82.80,  old: 99.99 },
+      { amount: 2800,  price: 21.90,  old: 24.99 },
+      { amount: 5900,  price: 39.50,  old: 49.99,  badge: "popular" },
+      { amount: 12000, price: 76.80,  old: 99.99 },
       { amount: 18500, price: 115.59, old: 149.99 },
       { amount: 24000, price: 153.80, old: 199.98 },
       { amount: 36000, price: 228.80, old: 299.97 },
@@ -204,9 +204,31 @@ const validAmt = (g, amt) => g.custom && Number.isInteger(amt) && amt >= g.custo
 function pkgFor(g, p, amt) {
   if (!g) return null;
   if (g.custom) return validAmt(g, amt) ? { amount: amt, price: customPrice(g, amt) } : null;
-  return g.packages[p] || null;
+  const pk = g.packages[p];
+  return pk && !pk.hidden ? pk : null;
 }
-const minPrice = (g) => g.custom ? customPrice(g, g.custom.min) : Math.min(...g.packages.map(p => p.price));
+const minPrice = (g) => g.custom ? customPrice(g, g.custom.min) : Math.min(...g.packages.filter(p => !p.hidden).map(p => p.price));
+
+/* =========================================================
+   أسعار من لوحة التحكم (بتتحفظ في Firebase وبتغطي على الأسعار اللي هنا)
+   ========================================================= */
+const DEFAULT_PRICES = JSON.parse(JSON.stringify(games.map(g => ({
+  id: g.id, custom: g.custom ? { perUnit: g.custom.perUnit, min: g.custom.min, max: g.custom.max } : null,
+  packages: g.packages.map(p => ({ price: p.price, old: p.old ?? null, badge: p.badge ?? null, hidden: false })),
+}))));
+function applyPrices(ov) {
+  games.forEach(g => {
+    const def = DEFAULT_PRICES.find(x => x.id === g.id), o = (ov && ov[g.id]) || {};
+    if (g.custom && def.custom) Object.assign(g.custom, def.custom, o.custom || {});
+    g.packages.forEach((p, i) => {
+      const base = def.packages[i] || {}, over = (o.packages && o.packages[i]) || {};
+      const m = { ...base, ...over };
+      p.price = +m.price; p.hidden = !!m.hidden;
+      if (m.old) p.old = +m.old; else delete p.old;
+      if (m.badge) p.badge = m.badge; else delete p.badge;
+    });
+  });
+}
 /* اسم الباقة: "4,500 V-Bucks" أو label زي "Welkin Moon" */
 const shortNum = (n) => n >= 1e6 ? (n / 1e6).toLocaleString("en-US") + "M" : n.toLocaleString("en-US");
 const pkgLabel = (g, p) => p.label || (g.custom && g.custom.suffix ? `${p.amount.toLocaleString("en-US")}${g.custom.suffix} ${g.unit}` : `${shortNum(p.amount)} ${g.unit}`);

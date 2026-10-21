@@ -23,7 +23,7 @@ if (!game) {
   const navDd = $(`.dd[data-type="${game.type}"] .dd-btn`);
   if (navDd) navDd.classList.add("active");
 
-  selected = Math.max(0, game.packages.findIndex(p => p.badge === "popular"));
+  selected = firstVisible();
   if (game.options) opt = game.options.default ?? 0;
   if (game.custom) { amt = game.custom.default; document.querySelector(".qty-row").hidden = true; }
   setupOrder();
@@ -33,6 +33,12 @@ if (!game) {
 
 /* نسبة التقييم: 98%+ أخضر · 96–97% أصفر · أقل من 96% أحمر */
 function pctClass(p) { return p >= 98 ? "good" : p >= 96 ? "mid" : "bad"; }
+
+/* الباقة المبدئية: Popular لو ظاهرة، وإلا أول باقة ظاهرة */
+function firstVisible() {
+  const pop = game.packages.findIndex(p => p.badge === "popular" && !p.hidden);
+  return pop >= 0 ? pop : Math.max(0, game.packages.findIndex(p => !p.hidden));
+}
 
 /* ---------- Render everything ---------- */
 function renderGame() {
@@ -58,11 +64,11 @@ function renderGame() {
   /* --- Store bar (above reviews): Nilorix + orders + stars + % --- */
   const st = storeStats();
   $("#storeBar").innerHTML = `
-    <img src="${SELLER.logo}" alt="" class="seller-logo">
+    <a href="store.html" class="sb-link" title="View store profile"><img src="${SELLER.logo}" alt="" class="seller-logo"></a>
     <div class="sb-info">
-      <h3>${SELLER.name} <span class="verified" title="Verified seller">✔</span>${st.positive === null ? "" : `<span class="pct ${pctClass(st.positive)}" title="Positive ratings">${st.positive}%</span>`}</h3>
+      <h3><a href="store.html" class="sb-link">${SELLER.name}</a> <span class="verified" title="Verified seller">✔</span>${st.positive === null ? "" : `<span class="pct ${pctClass(st.positive)}" title="Positive ratings">${st.positive}%</span>`}</h3>
       <div class="sb-line">
-        <span>📦 ${st.orders.toLocaleString("en-US")} ${st.orders === 1 ? "order" : "orders"}</span>
+        <span>📦 ${st.orders ? `${st.orders.toLocaleString("en-US")} ${st.orders === 1 ? "order" : "orders"}` : "New store"}</span>
         <span class="sb-rate">${starsHtml(st.avg)} ${st.count ? st.avg.toFixed(1) : ""}</span>
       </div>
     </div>`;
@@ -154,7 +160,9 @@ function renderCustom() {
 function renderAmounts() {
   renderAmountTop();
   if (game.custom) return renderCustom();
+  if (game.packages[selected] && game.packages[selected].hidden) selected = firstVisible();
   $("#amounts").innerHTML = game.packages.map((p, i) => {
+    if (p.hidden) return "";
     const pct = p.old ? Math.round((1 - p.price / p.old) * 100) : 0;
     const badge = p.badge === "popular" ? `<span class="amt-badge popular">★ Popular</span>`
                 : p.badge === "best"    ? `<span class="amt-badge best">Best Value</span>` : "";

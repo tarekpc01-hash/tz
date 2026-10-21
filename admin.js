@@ -51,15 +51,17 @@ NX.onAuth(user => {
   }
   show("#admMain");
   startSupport();
+  loadPriceOverrides();
   stopAll = NX.watchAllOrders(list => {
-    const before = new Set(all.map(o => o.id));
+    const before = new Map(all.map(o => [o.id, o]));
     const fresh = all.length && list.filter(o => !before.has(o.id));
+    const newDisputes = all.length && list.filter(o => o.status === "disputed" && (before.get(o.id) || {}).status !== "disputed");
     all = list;
     if (fresh && fresh.length) toast(`🛒 ${fresh.length} new order${fresh.length > 1 ? "s" : ""}!`);
-    const newDisputes = all.length && list.filter(o => o.status === "disputed" && (all.find(x => x.id === o.id) || {}).status !== "disputed");
     if (newDisputes && newDisputes.length) toast(`⚠ New dispute on #${shortId(newDisputes[0].id)}!`);
     render();
     autoComplete();
+    syncStats();
   }, err => {
     show("#admDenied");
     $("#admDeniedTitle").textContent = "Can't read orders";
@@ -80,6 +82,23 @@ $("#admDenied").addEventListener("click", async e => {
   if (e.target.id === "admVerify") { try { await NX.sendVerification(); toast("📧 Verification email sent"); } catch (err) { toast(NX.errText(err)); } }
   if (e.target.id === "admReload") { await NX.reloadUser(); if (!NX.isAdmin()) toast("Not verified yet — open the link in the email first."); }
 });
+
+/* ---------- public store numbers (same as this panel) ----------
+   عدد الأوردرات اللي بيظهر للعملاء = الأوردرات المدفوعة (Processing / Delivered / Disputed / Completed).
+   الأوردرات اللي لسه متدفعتش أو اتلغت مش بتتحسب. */
+const COUNTED = ["processing", "delivered", "disputed", "completed"];
+let lastStats = "";
+async function syncStats() {
+  const stats = { _orders: 0 };
+  all.filter(o => COUNTED.includes(o.status)).forEach(o => {
+    stats._orders++;
+    o.items.forEach(i => { stats[i.gid] = (stats[i.gid] || 0) + (i.qty || 1); });
+  });
+  const key = JSON.stringify(stats);
+  if (key === lastStats) return;
+  lastStats = key;
+  try { await NX.setStats(stats); } catch (e) { console.error(e); lastStats = ""; }
+}
 
 /* ---------- list ---------- */
 const TABS = [
@@ -279,8 +298,7 @@ $("#admDetail").addEventListener("click", async e => {
       if (!confirm("Mark this order as delivered?")) { b.disabled = false; return; }
       await NX.updateOrder(o.id, { status: "delivered", deliveredAt: Date.now() });
       await NX.sendMessage(o.id, `📦 Your order has been delivered! Please check your account and press "I received my order".`, "admin");
-      const counts = {}; o.items.forEach(i => { counts[i.gid] = (counts[i.gid] || 0) + i.qty; });
-      try { await NX.addSales(counts); } catch (err) { console.error(err); }
+
     }
     if (act === "redeliver") {
       const note = prompt("Message to the customer:", "We've re-sent your order — please check your account again.");
@@ -334,6 +352,8 @@ $$(".adm-view").forEach(b => b.addEventListener("click", () => {
   $$(".adm-view").forEach(x => x.classList.toggle("active", x === b));
   $("#admOrders").hidden = b.dataset.view !== "orders";
   $("#admSupport").hidden = b.dataset.view !== "support";
+  $("#admPrices").hidden = b.dataset.view !== "prices";
+  if (b.dataset.view === "prices") renderPrices();
 }));
 
 function renderSupport() {
@@ -396,4 +416,108 @@ $("#supDetail").addEventListener("submit", async e => {
   if (!text || !supSel) return;
   inp.value = "";
   try { await NX.sendTicketMessage(supSel, text, "admin"); } catch (err) { console.error(err); toast("Not sent"); inp.value = text; }
+});
+
+
+/* =========================================================
+   💲 Prices — change prices without uploading files
+   (saved in Firebase: config/prices — the store reads it on every page)
+   ========================================================= */
+let priceOv = {}, prGame = games[0].id, prDirty = false;
+async function loadPriceOverrides() {
+  priceOv = await NX.loadPrices();
+  applyPrices(priceOv);
+  if (!$("#admPrices").hidden) renderPrices();
+  render();
+}
+const money2 = (n) => (n == null || n === "" ? "" : (+n).toFixed(n < 0.1 ? 4 : 2));
+
+function renderPrices() {
+  $("#prGames").innerHTML = games.map(g => `
+    <button class="pr-game ${g.id === prGame ? "active" : ""}" data-pg="${g.id}">
+      <span class="mini-tile" style="--g:${g.g}">${gameImg(g)}</span>
+      <span><strong>${esc(g.name)}</strong><small>${priceOv[g.id] ? "Custom prices" : "Default prices"}</small></span>
+    </button>`).join("");
+  const g = byId(prGame), def = DEFAULT_PRICES.find(x => x.id === g.id);
+  let rows;
+  if (g.custom) {
+    rows = `
+      <p class="panel-sub">Customers type any amount. Price = amount × price per ${g.custom.suffix ? "1" + g.custom.suffix : "1"} ${esc(g.unit)}.</p>
+      <div class="pr-row pr-custom">
+        <label>Price per ${g.custom.suffix ? "1" + g.custom.suffix : "1"} ${esc(g.unit)} ($)<input type="number" step="0.0001" min="0" data-c="perUnit" value="${g.custom.perUnit}"><small>Default: ${def.custom.perUnit}</small></label>
+        <label>Minimum${g.custom.suffix ? " (" + g.custom.suffix + ")" : ""}<input type="number" step="1" min="1" data-c="min" value="${g.custom.min}"><small>Default: ${def.custom.min}</small></label>
+        <label>Maximum${g.custom.suffix ? " (" + g.custom.suffix + ")" : ""}<input type="number" step="1" min="1" data-c="max" value="${g.custom.max}"><small>Default: ${def.custom.max}</small></label>
+      </div>`;
+  } else {
+    rows = `
+      <div class="pr-head"><span>Package</span><span>Price ($)</span><span>Old price ($)</span><span>Badge</span><span>Show</span></div>
+      ${g.packages.map((p, i) => `
+        <div class="pr-row ${p.hidden ? "off" : ""}" data-i="${i}">
+          <span class="pr-name">${esc(pkgLabel(g, p))}<small>Default ${money(def.packages[i].price)}</small></span>
+          <input type="number" step="0.01" min="0" data-f="price" value="${money2(p.price)}">
+          <input type="number" step="0.01" min="0" data-f="old" value="${p.old ? money2(p.old) : ""}" placeholder="—">
+          <select data-f="badge">
+            <option value="" ${!p.badge ? "selected" : ""}>None</option>
+            <option value="popular" ${p.badge === "popular" ? "selected" : ""}>★ Popular</option>
+            <option value="best" ${p.badge === "best" ? "selected" : ""}>Best Value</option>
+          </select>
+          <label class="pr-toggle"><input type="checkbox" data-f="show" ${p.hidden ? "" : "checked"}><i></i></label>
+        </div>`).join("")}`;
+  }
+  $("#prEditor").innerHTML = `
+    <div class="adm-d-head">
+      <div><h3>${esc(g.name)}</h3><small class="muted-inline">Changes go live for everyone right after you save.</small></div>
+      <a class="btn btn-ghost adm-small" href="${gameUrl(g)}" target="_blank" rel="noopener">View page ↗</a>
+    </div>
+    <div class="pr-rows">${rows}</div>
+    <div class="pr-actions">
+      <button class="btn btn-primary" id="prSave">Save prices</button>
+      <button class="btn btn-ghost" id="prReset">Reset to default</button>
+      <span class="pr-dirty" id="prDirty" ${prDirty ? "" : "hidden"}>● Unsaved changes</span>
+    </div>`;
+}
+
+function readEditor() {
+  const g = byId(prGame), out = {};
+  if (g.custom) {
+    const v = (k) => +$(`#prEditor [data-c="${k}"]`).value;
+    out.custom = { perUnit: v("perUnit"), min: Math.round(v("min")), max: Math.round(v("max")) };
+    if (!(out.custom.perUnit > 0) || !(out.custom.min >= 1) || !(out.custom.max >= out.custom.min)) throw new Error("Check the numbers: price must be above 0 and max ≥ min.");
+  } else {
+    out.packages = [...$$("#prEditor .pr-row")].map(row => {
+      const q = (f) => row.querySelector(`[data-f="${f}"]`);
+      const price = +q("price").value, old = q("old").value === "" ? null : +q("old").value;
+      if (!(price > 0)) throw new Error("Every package needs a price above 0.");
+      return { price: Math.round(price * 100) / 100, old: old ? Math.round(old * 100) / 100 : null, badge: q("badge").value || null, hidden: !q("show").checked };
+    });
+    if (out.packages.every(p => p.hidden)) throw new Error("At least one package has to stay visible.");
+  }
+  return out;
+}
+
+$("#prGames").addEventListener("click", e => {
+  const b = e.target.closest("[data-pg]"); if (!b) return;
+  if (prDirty && !confirm("You have unsaved changes. Leave without saving?")) return;
+  prGame = b.dataset.pg; prDirty = false; renderPrices();
+});
+$("#prEditor").addEventListener("input", e => {
+  prDirty = true; $("#prDirty").hidden = false;
+  const row = e.target.closest(".pr-row"); if (row && e.target.dataset.f === "show") row.classList.toggle("off", !e.target.checked);
+});
+$("#prEditor").addEventListener("click", async e => {
+  if (e.target.id === "prSave") {
+    let data;
+    try { data = readEditor(); } catch (err) { return toast("⚠ " + err.message); }
+    const next = { ...priceOv, [prGame]: data };
+    e.target.disabled = true;
+    try { await NX.savePrices(next); priceOv = next; applyPrices(priceOv); prDirty = false; renderPrices(); render(); toast("✅ Prices saved — live now"); }
+    catch (err) { console.error(err); toast("Couldn't save — check the Firestore rules are published."); }
+    e.target.disabled = false;
+  }
+  if (e.target.id === "prReset") {
+    if (!confirm("Reset this game to the default prices from data.js?")) return;
+    const next = { ...priceOv }; delete next[prGame];
+    try { await NX.savePrices(next); priceOv = next; applyPrices(priceOv); prDirty = false; renderPrices(); render(); toast("↩ Back to default prices"); }
+    catch (err) { console.error(err); toast("Couldn't reset."); }
+  }
 });

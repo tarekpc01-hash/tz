@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nilorix store — reviews &amp; orders</title>
+  <meta name="description" content="NILORIX — Your ultimate destination for gaming & digital products.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="images/logo.png" type="image/png">
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">
+        <img src="images/logo.png" alt="NILORIX logo">
+        <span>NILORIX</span>
+      </a>
+
+      <nav class="nav" id="nav">
+
+        <!-- Currency dropdown -->
+        <div class="dd" data-type="currency">
+          <button class="nav-link dd-btn" type="button">
+            Currency
+            <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="dd-menu" data-menu="currency"></div>
+        </div>
+
+        <!-- Top Up dropdown -->
+        <div class="dd" data-type="topup">
+          <button class="nav-link dd-btn" type="button">
+            Top Up
+            <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="dd-menu" data-menu="topup"></div>
+        </div>
+      </nav>
+
+      <div class="header-tools">
+        <div class="search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input type="text" id="searchInput" placeholder="Search for games, currency, top up..." autocomplete="off">
+          <div class="search-results" id="searchResults"></div>
+        </div>
+        <select id="currency" class="currency" aria-label="Currency">
+          <option value="USD">USD</option>
+          <option value="EGP">EGP</option>
+          <option value="EUR">EUR</option>
+        </select>
+        <button class="icon-btn cart-btn" id="cartBtn" aria-label="Cart">
+          <svg viewBox="0 0 24 24"><path d="M3 4h2l2.5 11h11L21 7H6.5"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>
+          <span class="cart-count" id="cartCount">0</span>
+        </button>
+
+        <!-- Bell: orders -->
+        <div class="hd-pop" id="bellWrap">
+          <button class="icon-btn" id="bellBtn" aria-label="Orders">
+            <svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            <span class="cart-count" id="bellCount" hidden>0</span>
+          </button>
+          <div class="pop-menu bell-menu" id="bellMenu"></div>
+        </div>
+
+        <button class="icon-btn menu-btn" id="menuBtn" aria-label="Menu">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+
+        <!-- Profile circle (far right) -->
+        <div class="hd-pop" id="profileWrap">
+          <button class="avatar-btn" id="avatarBtn" aria-label="Account"></button>
+          <div class="pop-menu profile-menu" id="profileMenu"></div>
+        </div>
+        <input type="file" id="photoInput" accept="image/*" hidden>
+      </div>
+    </div>
+  </header>
+  <script src="logo.js"></script>
+
+  <!-- ===== STORE PROFILE ===== -->
+  <main class="container page">
+    <nav class="crumbs"><a href="index.html">Home</a><span>/</span><strong>Nilorix store</strong></nav>
+
+    <section class="st-hero">
+      <img src="images/logo.png" alt="" class="st-logo">
+      <div class="st-id">
+        <h1>Nilorix <span class="verified" title="Verified seller">✔</span> <span id="stPct"></span></h1>
+        <p>Official store · Gaming currency &amp; top ups · ⚡ Delivery in about <span id="stDelivery"></span></p>
+      </div>
+    </section>
+
+    <div class="st-stats" id="stStats"></div>
+
+    <div class="st-grid">
+      <aside class="panel st-summary" id="stSummary"></aside>
+      <section class="panel">
+        <div class="rev-head">
+          <h3 class="panel-title">Reviews</h3>
+          <div class="filters" id="stFilters"></div>
+        </div>
+        <div class="st-reviews" id="stReviews"></div>
+      </section>
+    </div>
+
+    <section class="section">
+      <div class="section-head"><h2>🎮 Games we sell</h2></div>
+      <div class="more-row" id="stGames"></div>
+    </section>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer" id="support">
+    <div class="container footer-inner">
+      <div>
+        <a href="index.html" class="logo"><img src="images/logo.png" alt=""><span>NILORIX</span></a>
+        <p class="muted">Your ultimate destination for gaming &amp; digital products.</p>
+      </div>
+      <div>
+        <h4>Currency</h4>
+        <div id="footerCurrency"></div>
+      </div>
+      <div>
+        <h4>Top Up</h4>
+        <div id="footerTopup"></div>
+      </div>
+      <div>
+        <h4>Support</h4>
+        <a href="mailto:support@nilorix.com">support@nilorix.com</a>
+        <p class="muted">24/7 Live Support</p>
+      </div>
+    </div>
+    <p class="copy">© <span id="year"></span> NILORIX. All rights reserved.</p>
+  </footer>
+
+  <!-- ===== CART DRAWER ===== -->
+  <div class="overlay" id="overlay"></div>
+  <aside class="cart" id="cart">
+    <div class="cart-head">
+      <h3>Your Cart</h3>
+      <button class="icon-btn" id="closeCart" aria-label="Close">✕</button>
+    </div>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="cart-foot">
+      <div class="cart-total"><span>Total</span><strong id="cartTotal">$0.00</strong></div>
+      <button class="btn btn-primary btn-block" id="checkoutBtn">Checkout</button>
+    </div>
+  </aside>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Firebase (accounts + orders) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="config.js"></script>
+  <script src="assets.js"></script>
+  <script src="data.js"></script>
+  <script src="backend.js"></script>
+  <script src="common.js"></script>
+  <script src="store.js"></script>
+</body>
+</html>
