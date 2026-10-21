@@ -129,6 +129,43 @@ const NX = (() => {
   }
   const sendMessage = (id, text, from) => messages(id).add({ uid: user.uid, from, text, createdAt: Date.now() });
 
+  /* ---------- support tickets (chat widget) ---------- */
+  const tickets = () => db.collection("tickets");
+  async function createTicket(reason, text, orderId) {
+    const now = Date.now();
+    const ref = await tickets().add({
+      uid: user.uid, buyerEmail: user.email || "", buyerName: (profile && profile.name) || "",
+      reason, orderId: orderId || "", status: "open",
+      createdAt: now, updatedAt: now, lastFrom: "buyer", lastText: text.slice(0, 200),
+    });
+    await tickets().doc(ref.id).collection("messages").add({ uid: user.uid, from: "buyer", text, createdAt: now });
+    return ref.id;
+  }
+  function watchMyTickets(cb) {
+    if (!user) { cb([]); return () => {}; }
+    return tickets().where("uid", "==", user.uid).onSnapshot(
+      s => cb(s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.updatedAt - a.updatedAt)),
+      e => { console.error(e); cb([]); });
+  }
+  function watchAllTickets(cb, onErr) {
+    return tickets().orderBy("updatedAt", "desc").limit(300).onSnapshot(
+      s => cb(s.docs.map(d => ({ id: d.id, ...d.data() }))),
+      e => { console.error(e); onErr && onErr(e); });
+  }
+  function watchTicketMessages(id, cb) {
+    return tickets().doc(id).collection("messages").onSnapshot(
+      s => cb(s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.createdAt - b.createdAt)),
+      e => { console.error(e); cb([]); });
+  }
+  async function sendTicketMessage(id, text, from) {
+    const now = Date.now();
+    await tickets().doc(id).collection("messages").add({ uid: user.uid, from, text, createdAt: now });
+    const upd = { updatedAt: now, lastFrom: from, lastText: text.slice(0, 200) };
+    if (from === "buyer") upd.status = "open";
+    await tickets().doc(id).update(upd);
+  }
+  const setTicketStatus = (id, status) => tickets().doc(id).update({ status, updatedAt: Date.now() });
+
   /* ---------- reviews (public) ---------- */
   async function loadReviews() {
     try {
@@ -148,6 +185,7 @@ const NX = (() => {
     const d = await ref.get();
     const cur = d.exists ? d.data() : {};
     Object.entries(counts).forEach(([k, v]) => { cur[k] = (cur[k] || 0) + v; });
+    cur._orders = (cur._orders || 0) + 1;   // عدد الأوردرات اللي اتسلّمت فعلاً
     await ref.set(cur);
   }
 
@@ -174,6 +212,6 @@ const NX = (() => {
     enabled, onAuth, get user() { return user; }, get profile() { return profile; }, isAdmin, isAdminEmail, sendVerification, reloadUser,
     errText, signUp, signIn, signInGoogle, resetPassword, signOut, saveProfile,
     createOrder, watchMyOrders, watchOrder, updateOrder, submitPayment, cancelOrder, markReceived, openDispute,
-    watchMessages, sendMessage, loadReviews, addReview, loadSales, addSales, watchAllOrders, notifyOwner,
+    watchMessages, sendMessage, createTicket, watchMyTickets, watchAllTickets, watchTicketMessages, sendTicketMessage, setTicketStatus, loadReviews, addReview, loadSales, addSales, watchAllOrders, notifyOwner,
   };
 })();

@@ -13,7 +13,7 @@ function fmt(usd) {
   const v = usd * rates[currency];
   return symbols[currency] + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-function totalSold(g) { return g.sold + (remoteSales[g.id] || 0); }
+function totalSold(g) { return (g.sold || 0) + (remoteSales[g.id] || 0); }
 function soldLabel(n) { return n >= 1000 ? (n / 1000).toFixed(1).replace(".0", "") + "k" : n; }
 
 /* Reviews = تقييمات العملاء من قاعدة البيانات + اللي مكتوبة في data.js */
@@ -25,7 +25,7 @@ function avgStars(list) { return list.length ? list.reduce((s, r) => s + r.stars
 function storeStats() {
   const all = [...remoteReviews, ...games.flatMap(g => g.reviews || [])];
   return {
-    orders: games.reduce((s, x) => s + totalSold(x), 0),
+    orders: (remoteSales._orders || 0) + games.reduce((s, x) => s + (x.sold || 0), 0),   // أوردرات حقيقية اتسلّمت
     count: all.length,
     avg: avgStars(all),
     positive: all.length ? Math.round(all.filter(r => r.stars >= 4).length / all.length * 100) : null,
@@ -600,6 +600,182 @@ document.addEventListener("click", e => { if (!e.target.closest(".hd-pop")) clos
 document.addEventListener("keydown", e => { if (e.key === "Escape") { closePops(); closeSettings(); closeLogin(); } });
 
 /* =========================================================
+   💬 Support chat widget (bottom-right) — like eldorado.gg
+   ========================================================= */
+const SUPPORT_REASONS = [
+  { id: "order",   icon: "📦", label: "Problem with an order" },
+  { id: "payment", icon: "💳", label: "Payment question" },
+  { id: "product", icon: "🎮", label: "Question about a product" },
+  { id: "account", icon: "👤", label: "Account & sign in" },
+  { id: "other",   icon: "💬", label: "Something else" },
+];
+const sw = document.createElement("div");
+sw.className = "sw";
+sw.innerHTML = `
+  <button class="sw-fab" id="swFab" aria-label="Chat with support">
+    <svg class="sw-ic-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
+    <svg class="sw-ic-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    <span class="sw-badge" id="swBadge" hidden></span>
+  </button>
+  <div class="sw-panel" id="swPanel" role="dialog" aria-label="Support chat">
+    <div class="sw-head">
+      <button class="sw-back" id="swBack" aria-label="Back" hidden><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <img src="${typeof LOGO_SRC !== 'undefined' ? LOGO_SRC : 'images/logo.png'}" alt="" class="sw-logo">
+      <div><strong>Nilorix Support</strong><small><span class="sw-dot"></span>We usually reply in a few minutes</small></div>
+    </div>
+    <div class="sw-body" id="swBody"></div>
+  </div>`;
+document.body.appendChild(sw);
+
+let swView = "home", swTicket = null, swReason = null, swMsgs = [], swStopMsgs = null, myTickets = [], swStopTickets = null;
+const swSeenKey = () => "nx_sw_seen_" + (NX.user ? NX.user.uid : "guest");
+const swUnread = () => myTickets.filter(t => t.lastFrom === "admin" && t.updatedAt > store(swSeenKey(), 0));
+const reasonOf = (id) => SUPPORT_REASONS.find(r => r.id === id) || { icon: "💬", label: id };
+
+function swOpen(open) {
+  sw.classList.toggle("open", open);
+  if (open) { closePops(); renderSw(); }
+}
+function swGo(view, data) {
+  if (swStopMsgs) { swStopMsgs(); swStopMsgs = null; }
+  swView = view;
+  if (view === "ticket") {
+    swTicket = data; swMsgs = [];
+    swStopMsgs = NX.watchTicketMessages(data, list => { swMsgs = list; if (swView === "ticket") renderSw(); });
+  }
+  if (view === "compose") swReason = data;
+  renderSw();
+}
+
+function renderSw() {
+  const body = $("#swBody");
+  $("#swBack").hidden = swView === "home";
+  const name = (NX.profile && NX.profile.name) ? NX.profile.name.split(" ")[0] : "";
+
+  if (swView === "home") {
+    const open = myTickets.slice(0, 4);
+    body.innerHTML = `
+      <div class="sw-hello"><h4>Hi${name ? " " + esc(name) : ""} 👋</h4><p>How can we help you today?</p></div>
+      ${open.length ? `
+        <div class="sw-label">Your conversations</div>
+        ${open.map(t => `
+          <button class="sw-conv" data-ticket="${t.id}">
+            <span class="sw-conv-ic">${reasonOf(t.reason).icon}</span>
+            <span class="sw-conv-txt"><strong>${esc(reasonOf(t.reason).label)}</strong><small>${t.lastFrom === "admin" ? "Nilorix: " : "You: "}${esc(t.lastText || "")}</small></span>
+            ${t.lastFrom === "admin" && t.updatedAt > store(swSeenKey(), 0) ? `<span class="sw-new"></span>` : `<small class="sw-time">${timeAgo(t.updatedAt)}</small>`}
+          </button>`).join("")}` : ""}
+      <div class="sw-label">Choose a topic</div>
+      ${SUPPORT_REASONS.map(r => `<button class="sw-reason" data-reason="${r.id}"><span>${r.icon}</span>${r.label}<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>`).join("")}
+      ${!NX.user ? `<p class="sw-note">You'll need to sign in so we can reply to you.</p>` : ""}`;
+    return;
+  }
+
+  if (swView === "orders") {
+    body.innerHTML = `
+      <div class="sw-label">Which order?</div>
+      ${myOrders.slice(0, 8).map(o => {
+        const first = o.items[0], g = byId(first.gid);
+        return `<a class="sw-conv" href="order.html?id=${o.id}#chat">
+          ${g ? tile(g) : `<span class="mini-tile">#</span>`}
+          <span class="sw-conv-txt"><strong>${esc(first.label)}</strong><small>#${shortId(o.id)} · ${(ORDER_STATUS[o.status] || {}).label || o.status}</small></span>
+          <svg viewBox="0 0 24 24" class="sw-chev"><path d="M9 6l6 6-6 6"/></svg></a>`;
+      }).join("") || `<p class="sw-note">You don't have any orders yet.</p>`}
+      <p class="sw-note">Each order has its own chat — pick the order to talk to us about it.</p>
+      <button class="sw-reason" data-compose="order"><span>✍️</span>My order isn't listed<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>`;
+    return;
+  }
+
+  if (swView === "compose") {
+    const r = reasonOf(swReason);
+    body.innerHTML = `
+      <div class="sw-topic">${r.icon} ${esc(r.label)}</div>
+      <form class="sw-compose" id="swCompose">
+        <textarea id="swText" maxlength="1000" rows="5" placeholder="Tell us how we can help…" required></textarea>
+        <button class="btn btn-primary btn-block" type="submit">Send message</button>
+      </form>`;
+    setTimeout(() => $("#swText") && $("#swText").focus(), 30);
+    return;
+  }
+
+  if (swView === "ticket") {
+    const t = myTickets.find(x => x.id === swTicket) || {};
+    const keep = $("#swInput") ? $("#swInput").value : "";
+    body.innerHTML = `
+      <div class="sw-topic">${reasonOf(t.reason).icon} ${esc(reasonOf(t.reason).label)}${t.status === "closed" ? ` <span class="sw-closed">Closed</span>` : ""}</div>
+      <div class="sw-msgs" id="swMsgs">
+        ${swMsgs.map(m => `
+          <div class="msg ${m.from === "buyer" ? "mine" : "theirs"}">
+            ${m.from === "admin" ? `<img src="${typeof LOGO_SRC !== 'undefined' ? LOGO_SRC : 'images/logo.png'}" alt="" class="msg-av">` : ""}
+            <div class="bubble"><p>${esc(m.text)}</p><small>${m.from === "admin" ? "Nilorix · " : ""}${timeAgo(m.createdAt)}</small></div>
+          </div>`).join("")}
+        ${swMsgs.length && swMsgs[swMsgs.length - 1].from === "buyer" ? `<p class="sw-note">Thanks! We'll reply here soon — we'll also see it if you close this window.</p>` : ""}
+      </div>
+      <form class="chat-form sw-reply" id="swReply">
+        <input type="text" id="swInput" maxlength="1000" placeholder="Write a message…" autocomplete="off">
+        <button class="btn btn-primary" type="submit">Send</button>
+      </form>`;
+    if (keep) $("#swInput").value = keep;
+    const box = $("#swMsgs"); box.scrollTop = box.scrollHeight;
+    // mark as read
+    save(swSeenKey(), Date.now()); renderSwBadge();
+  }
+}
+function renderSwBadge() {
+  const n = NX.user ? swUnread().length : 0;
+  $("#swBadge").hidden = n === 0;
+  $("#swBadge").textContent = n;
+}
+
+$("#swFab").addEventListener("click", e => { e.stopPropagation(); swOpen(!sw.classList.contains("open")); });
+$("#swBack").addEventListener("click", () => swGo(swView === "compose" && swReason === "order" && myOrders.length ? "orders" : "home"));
+sw.addEventListener("click", async e => {
+  e.stopPropagation();
+  const conv = e.target.closest("[data-ticket]");
+  if (conv) return swGo("ticket", conv.dataset.ticket);
+  const r = e.target.closest("[data-reason]");
+  const c = e.target.closest("[data-compose]");
+  if (r || c) {
+    const reason = r ? r.dataset.reason : c.dataset.compose;
+    if (!NX.enabled) return toast("Support chat isn't connected yet.");
+    if (!NX.user) { await requireLogin("Sign in so we can reply to your message."); swOpen(true); }
+    if (reason === "order" && r && myOrders.length) return swGo("orders");
+    return swGo("compose", reason);
+  }
+});
+sw.addEventListener("submit", async e => {
+  e.preventDefault();
+  if (e.target.id === "swCompose") {
+    const text = $("#swText").value.trim();
+    if (!text) return;
+    const btn = e.target.querySelector("button"); btn.disabled = true; btn.textContent = "Sending…";
+    try {
+      const id = await NX.createTicket(swReason, text);
+      NX.notifyOwner(`💬 New support message — ${reasonOf(swReason).label}`, {
+        Topic: reasonOf(swReason).label, From: `${(NX.profile && NX.profile.name) || ""} <${NX.user.email}>`, Message: text,
+      });
+      save("nx_swmail_" + id, Date.now());
+      swGo("ticket", id);
+    } catch (err) { console.error(err); toast("Couldn't send — try again."); btn.disabled = false; btn.textContent = "Send message"; }
+  }
+  if (e.target.id === "swReply") {
+    const inp = $("#swInput"), text = inp.value.trim();
+    if (!text || !swTicket) return;
+    inp.value = "";
+    try {
+      await NX.sendTicketMessage(swTicket, text, "buyer");
+      const k = "nx_swmail_" + swTicket;
+      if (Date.now() - store(k, 0) > 10 * 60000) {
+        save(k, Date.now());
+        const t = myTickets.find(x => x.id === swTicket) || {};
+        NX.notifyOwner(`💬 Support reply — ${reasonOf(t.reason).label}`, { From: NX.user.email, Message: text });
+      }
+    } catch (err) { console.error(err); toast("Message not sent — try again."); inp.value = text; }
+  }
+});
+document.addEventListener("click", e => { if (!e.target.closest(".sw") && !e.target.closest(".modal")) sw.classList.remove("open"); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") sw.classList.remove("open"); });
+
+/* =========================================================
    Start
    ========================================================= */
 NX.onAuth(user => {
@@ -609,7 +785,15 @@ NX.onAuth(user => {
   }
   if (stopOrders) { stopOrders(); stopOrders = null; }
   myOrders = [];
-  if (user) stopOrders = NX.watchMyOrders(list => { myOrders = list; renderBell(); });
+  if (user) stopOrders = NX.watchMyOrders(list => { myOrders = list; renderBell(); if (swView === "orders") renderSw(); });
+  if (swStopTickets) { swStopTickets(); swStopTickets = null; }
+  myTickets = [];
+  if (user) swStopTickets = NX.watchMyTickets(list => {
+    myTickets = list; renderSwBadge();
+    if (sw.classList.contains("open") && swView !== "compose") renderSw();
+  });
+  if (!user && swView !== "home") swGo("home");
+  renderSwBadge();
   renderProfile();
   renderBell();
   if (window.onAuthChange) window.onAuthChange(user);

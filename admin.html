@@ -47,6 +47,21 @@
 
   <!-- panel -->
   <main class="container page" id="admMain" hidden>
+    <div class="adm-views">
+      <button class="adm-view active" data-view="orders">🛒 Orders <b id="admViewOrders"></b></button>
+      <button class="adm-view" data-view="support">💬 Support <b id="admViewSupport"></b></button>
+    </div>
+
+    <!-- SUPPORT inbox -->
+    <div id="admSupport" hidden>
+      <div class="adm-bar"><div class="filters" id="supTabs"></div></div>
+      <div class="adm-grid">
+        <div class="adm-list" id="supList"></div>
+        <aside class="adm-detail panel" id="supDetail"><p class="panel-sub">Select a conversation.</p></aside>
+      </div>
+    </div>
+
+    <div id="admOrders">
     <div class="adm-stats" id="admStats"></div>
 
     <div class="adm-bar">
@@ -59,6 +74,7 @@
       <aside class="adm-detail panel" id="admDetail">
         <p class="panel-sub">Select an order to see the details.</p>
       </aside>
+    </div>
     </div>
   </main>
 

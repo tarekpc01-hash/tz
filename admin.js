@@ -50,6 +50,7 @@ NX.onAuth(user => {
     return;
   }
   show("#admMain");
+  startSupport();
   stopAll = NX.watchAllOrders(list => {
     const before = new Set(all.map(o => o.id));
     const fresh = all.length && list.filter(o => !before.has(o.id));
@@ -308,4 +309,91 @@ $("#admDetail").addEventListener("submit", async e => {
   if (!text || !selId) return;
   inp.value = "";
   try { await NX.sendMessage(selId, text, "admin"); } catch (err) { console.error(err); toast("Not sent"); inp.value = text; }
+});
+
+
+/* =========================================================
+   💬 Support inbox (tickets from the chat widget)
+   ========================================================= */
+const SUP_REASONS = { order: "📦 Problem with an order", payment: "💳 Payment question", product: "🎮 Question about a product", account: "👤 Account & sign in", other: "💬 Something else" };
+let tks = [], supTab = "waiting", supSel = null, supStopAll = null, supStopMsgs = null, supMsgs = [];
+const waiting = (t) => t.status === "open" && t.lastFrom === "buyer";
+
+function startSupport() {
+  if (supStopAll) return;
+  supStopAll = NX.watchAllTickets(list => {
+    const before = new Map(tks.map(t => [t.id, t]));
+    const fresh = tks.length ? list.filter(t => waiting(t) && (!before.has(t.id) || before.get(t.id).updatedAt !== t.updatedAt)) : [];
+    tks = list;
+    if (fresh.length) toast(`💬 New support message from ${fresh[0].buyerName || fresh[0].buyerEmail}`);
+    renderSupport();
+  }, () => {});
+}
+
+$$(".adm-view").forEach(b => b.addEventListener("click", () => {
+  $$(".adm-view").forEach(x => x.classList.toggle("active", x === b));
+  $("#admOrders").hidden = b.dataset.view !== "orders";
+  $("#admSupport").hidden = b.dataset.view !== "support";
+}));
+
+function renderSupport() {
+  const nWait = tks.filter(waiting).length;
+  $("#admViewSupport").textContent = nWait || "";
+  $("#admViewSupport").classList.toggle("hot", nWait > 0);
+  const T = [["waiting", "Needs reply", waiting], ["open", "Open", t => t.status === "open"], ["closed", "Closed", t => t.status === "closed"], ["all", "All", () => true]];
+  $("#supTabs").innerHTML = T.map(([k, l, f]) => `<button class="filter ${k === supTab ? "active" : ""}" data-sup="${k}">${l} <b>${tks.filter(f).length}</b></button>`).join("");
+  const list = tks.filter(T.find(x => x[0] === supTab)[2]);
+  $("#supList").innerHTML = list.length ? list.map(t => `
+    <button class="adm-row ${t.id === supSel ? "sel" : ""}" data-tk="${t.id}">
+      <span class="sw-conv-ic">${(SUP_REASONS[t.reason] || "💬").split(" ")[0]}</span>
+      <span class="adm-row-info">
+        <strong>${esc(t.buyerName || t.buyerEmail || "Customer")} · ${esc((SUP_REASONS[t.reason] || t.reason).replace(/^\S+\s/, ""))}</strong>
+        <small>${t.lastFrom === "admin" ? "You: " : ""}${esc(t.lastText || "")}</small>
+      </span>
+      ${waiting(t) ? `<span class="status st-wait">Needs reply</span>` : t.status === "closed" ? `<span class="status st-cancel">Closed</span>` : `<span class="status st-done">Answered</span>`}
+      <small class="sw-time">${timeAgo(t.updatedAt)}</small>
+    </button>`).join("") : `<div class="pop-empty">📭<p>No conversations here</p></div>`;
+  renderSupDetail();
+}
+
+function renderSupDetail() {
+  const t = tks.find(x => x.id === supSel), box = $("#supDetail");
+  if (!t) { box.innerHTML = `<p class="panel-sub">Select a conversation.</p>`; return; }
+  const keep = $("#supInput") ? $("#supInput").value : "";
+  box.innerHTML = `
+    <div class="adm-d-head">
+      <div><h3>${esc(SUP_REASONS[t.reason] || t.reason)}</h3><small class="muted-inline">${esc(t.buyerName || "")} · ${esc(t.buyerEmail || "")}</small></div>
+      ${t.status === "closed" ? `<button class="btn btn-ghost adm-small" data-tkact="open">Reopen</button>` : `<button class="btn btn-ghost adm-small" data-tkact="close">✓ Close</button>`}
+    </div>
+    <div class="chat-list adm-chat" id="supChat" style="max-height:420px">
+      ${supMsgs.map(m => `<div class="msg ${m.from === "admin" ? "mine" : "theirs"}"><div class="bubble"><p>${esc(m.text)}</p><small>${m.from === "admin" ? "You" : "Customer"} · ${timeAgo(m.createdAt)}</small></div></div>`).join("") || `<p class="chat-empty">Loading…</p>`}
+    </div>
+    <form class="chat-form" id="supForm">
+      <input type="text" id="supInput" maxlength="1000" placeholder="Reply to the customer…" autocomplete="off">
+      <button class="btn btn-primary" type="submit">Send</button>
+    </form>
+    <p class="panel-sub" style="margin-top:8px">The customer sees your reply in the chat bubble on the site (with a red badge).</p>`;
+  if (keep) $("#supInput").value = keep;
+  const c = $("#supChat"); c.scrollTop = c.scrollHeight;
+}
+
+$("#supTabs").addEventListener("click", e => { const b = e.target.closest("[data-sup]"); if (b) { supTab = b.dataset.sup; renderSupport(); } });
+$("#supList").addEventListener("click", e => {
+  const b = e.target.closest("[data-tk]"); if (!b) return;
+  supSel = b.dataset.tk; supMsgs = [];
+  if (supStopMsgs) supStopMsgs();
+  supStopMsgs = NX.watchTicketMessages(supSel, l => { supMsgs = l; renderSupDetail(); });
+  renderSupport();
+});
+$("#supDetail").addEventListener("click", async e => {
+  const b = e.target.closest("[data-tkact]"); if (!b || !supSel) return;
+  try { await NX.setTicketStatus(supSel, b.dataset.tkact === "close" ? "closed" : "open"); toast("✅ Updated"); } catch { toast("Couldn't update"); }
+});
+$("#supDetail").addEventListener("submit", async e => {
+  if (e.target.id !== "supForm") return;
+  e.preventDefault();
+  const inp = $("#supInput"), text = inp.value.trim();
+  if (!text || !supSel) return;
+  inp.value = "";
+  try { await NX.sendTicketMessage(supSel, text, "admin"); } catch (err) { console.error(err); toast("Not sent"); inp.value = text; }
 });

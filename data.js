@@ -6,7 +6,7 @@
    الألعاب — عدّل من هنا بس
    type    : "currency" أو "topup"  (يحدد هي في أنهي ليستة)
    unit    : اسم العملة اللي بتظهر في كروت الكمية (V-Bucks, Robux...)
-   sold    : عدد الأوردرات — حط الرقم الحقيقي (الأكثر مبيعاً بيترتب على حسبه)
+   sold    : سيبه 0 — عدد الأوردرات بيتحسب لوحده من الأوردرات اللي بتتسلّم (Delivered) في لوحة التحكم
    img     : لوجو اللعبة — حط الصورة في فولدر images/games بنفس الاسم المكتوب
              (لو الصورة مش موجودة بيظهر أول حرف من اسم اللعبة بدلها)
    packages: كل باقة = { amount: الكمية, price: السعر بالدولار,
@@ -23,21 +23,21 @@
 const games = [
   /* ---------- Currency ---------- */
   { id: "ps99", type: "currency", name: "Pet Simulator 99", desc: "Diamonds", unit: "Diamonds",
-    g: "linear-gradient(150deg,#22c55e,#0e7490)", sold: 860, img: "images/games/ps99.png", reviews: [],
+    g: "linear-gradient(150deg,#22c55e,#0e7490)", sold: 0, img: "images/games/ps99.png", reviews: [],
     about: "Buy Pet Simulator 99 Diamonds safely and get them delivered to your Roblox account fast.",
     /* كمية حرّة بالـ B: العميل بيكتب عدد البليون، والسعر = العدد × perUnit ($1.2 لكل 1B) */
     custom: { perUnit: 1.2, suffix: "B", min: 1, max: 100, default: 5, presets: [1, 2, 5, 10, 25, 50], color: "#22c55e" },
     packages: [] },
 
   { id: "bladeball", type: "currency", name: "Blade Ball Tokens", desc: "Tokens", unit: "Tokens",
-    g: "linear-gradient(150deg,#f43f5e,#3b0764)", sold: 640, img: "images/games/bladeball.png", reviews: [],
+    g: "linear-gradient(150deg,#f43f5e,#3b0764)", sold: 0, img: "images/games/bladeball.png", reviews: [],
     about: "Get Blade Ball Tokens to unlock swords, abilities and explosions.",
     /* كمية حرّة بالـ K: العميل بيكتب عدد الألف، والسعر = العدد × perUnit ($2.5 لكل 1K) */
     custom: { perUnit: 2.5, suffix: "K", min: 1, max: 500, default: 10, presets: [5, 10, 25, 50, 100, 250], color: "#f43f5e" },
     packages: [] },
 
   { id: "robux", type: "currency", name: "Roblox Robux", desc: "Robux", unit: "Robux",
-    g: "linear-gradient(150deg,#ffd43b,#f59f00)", sold: 1520, img: "", reviews: [],
+    g: "linear-gradient(150deg,#ffd43b,#f59f00)", sold: 0, img: "", reviews: [],
     about: "Top up Robux for your Roblox account and spend them in any experience.",
     /* كمية حرّة: العميل بيكتب عدد الروبوكس، والسعر = العدد × perUnit */
     custom: { perUnit: 0.006, min: 500, max: 100000, default: 1000, presets: [500, 1000, 2500, 5000, 10000, 25000], color: "#f59f00" },
@@ -45,12 +45,12 @@ const games = [
 
   /* ---------- Top Up ---------- */
   { id: "fortnite", type: "topup", name: "Fortnite", desc: "V-Bucks", unit: "V-Bucks",
-    g: "linear-gradient(150deg,#ffb020,#ea580c)", sold: 1380, img: "images/games/fortnite.png", reviews: [],
+    g: "linear-gradient(150deg,#ffb020,#ea580c)", sold: 0, img: "images/games/fortnite.png", reviews: [],
     about: "Top up V-Bucks for skins, emotes and the Battle Pass.",
     packages: [
       { amount: 800,    price: 3.50,   old: 8.99 },
       { amount: 2400,   price: 9.96,   old: 22.99 },
-      { amount: 4500,   price: 14.99,  old: 36.99, badge: "popular" },
+      { amount: 4500,   price: 14.84,  old: 36.99, badge: "popular" },
       { amount: 9000,   price: 25.00,  old: 73.98 },
       { amount: 12500,  price: 31.99,  old: 89.99 },
       { amount: 25000,  price: 64.00,  old: 179.98 },
@@ -60,7 +60,7 @@ const games = [
     ] },
 
   { id: "apex", type: "topup", name: "Apex Legends", desc: "Apex Coins", unit: "Apex Coins",
-    g: "linear-gradient(150deg,#dc2626,#450a0a)", sold: 540, img: "images/games/apex.png", reviews: [],
+    g: "linear-gradient(150deg,#dc2626,#450a0a)", sold: 0, img: "images/games/apex.png", reviews: [],
     about: "Get Apex Coins for legends, skins and the Battle Pass.",
     coinImg: "images/games/apex-coin.png",   // أيقونة العملات جنب كل كمية
     coinNumber: true,                         // الرقم تحت الأيقونة = نفس الكمية
@@ -73,7 +73,7 @@ const games = [
     ] },
 
   { id: "eafc", type: "topup", name: "EA Sports FC Points", desc: "FC Points", unit: "FC Points",
-    g: "linear-gradient(150deg,#10b981,#0c4a6e)", sold: 910, img: "images/games/eafc.png", reviews: [],
+    g: "linear-gradient(150deg,#10b981,#0c4a6e)", sold: 0, img: "images/games/eafc.png", reviews: [],
     about: "Top up FC Points for Ultimate Team packs and more.",
     /* تنبيه برتقاني بيظهر فوق الكميات */
     notice: {
@@ -104,7 +104,7 @@ const games = [
     ] },
 
   { id: "pokemongo", type: "topup", name: "Pokémon GO Top Up", desc: "PokéCoins", unit: "PokéCoins",
-    g: "linear-gradient(150deg,#eab308,#1d4ed8)", sold: 470, img: "images/games/pokemongo.png", reviews: [],
+    g: "linear-gradient(150deg,#eab308,#1d4ed8)", sold: 0, img: "images/games/pokemongo.png", reviews: [],
     about: "Get PokéCoins for items, storage upgrades and raid passes.",
     packages: [
       { amount: 1200,  price: 3.10,  old: 9.99,  icon: "images/games/pokemongo/c1200.png" },
@@ -117,7 +117,7 @@ const games = [
     ] },
 
   { id: "genshin", type: "topup", name: "Genshin Impact Top Up", desc: "Genesis Crystals", unit: "Genesis Crystals",
-    g: "linear-gradient(150deg,#a78bfa,#1e1b4b)", sold: 780, img: "images/games/genshin.png", reviews: [],
+    g: "linear-gradient(150deg,#a78bfa,#1e1b4b)", sold: 0, img: "images/games/genshin.png", reviews: [],
     about: "Top up Genesis Crystals and Welkin Moon for your Genshin account.",
     options: { title: "Game region", choices: ["EU", "NA", "Asia", "TW, HK, MO"], default: 0 },
     packages: [

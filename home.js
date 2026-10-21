@@ -36,7 +36,7 @@ function renderHome() {
       <span class="rank">#${i + 1}</span>
       ${tile(g)}
       <span class="trend-info"><strong>${g.name}</strong><small>${TYPE_LABEL[g.type]}</small></span>
-      <span class="trend-right"><strong>${fmt(minPrice(g))}</strong><span class="sold">🔥 ${soldLabel(totalSold(g))} sold</span></span>
+      <span class="trend-right"><strong>${fmt(minPrice(g))}</strong>${totalSold(g) ? `<span class="sold">🔥 ${soldLabel(totalSold(g))} sold</span>` : ""}</span>
     </a>`).join("");
 }
 

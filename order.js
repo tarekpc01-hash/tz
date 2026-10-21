@@ -35,6 +35,10 @@ window.onAuthChange = (user) => {
     $("#odWrap").hidden = false;
     renderOrder();
     autoCompleteIfDue();
+    if (location.hash === "#chat" && !window._nxChatScrolled) {
+      window._nxChatScrolled = true;
+      setTimeout(() => { document.querySelector(".chat").scrollIntoView({ behavior: "smooth" }); $("#chatInput").focus(); }, 300);
+    }
   }, () => gate("Order not found", "You don't have access to this order.", false));
 
   stopChat = NX.watchMessages(orderId, list => { chatMsgs = list; renderChat(); });

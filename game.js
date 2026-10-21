@@ -62,7 +62,7 @@ function renderGame() {
     <div class="sb-info">
       <h3>${SELLER.name} <span class="verified" title="Verified seller">✔</span>${st.positive === null ? "" : `<span class="pct ${pctClass(st.positive)}" title="Positive ratings">${st.positive}%</span>`}</h3>
       <div class="sb-line">
-        <span>📦 ${st.orders.toLocaleString("en-US")} orders</span>
+        <span>📦 ${st.orders.toLocaleString("en-US")} ${st.orders === 1 ? "order" : "orders"}</span>
         <span class="sb-rate">${starsHtml(st.avg)} ${st.count ? st.avg.toFixed(1) : ""}</span>
       </div>
     </div>`;
