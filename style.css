@@ -377,6 +377,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .sb-pct { text-align: center; padding-left: 12px; border-left: 1px solid var(--border); flex-shrink: 0; }
 .sb-pct strong { display: block; font-size: 20px; color: #22c55e; }
 .sb-pct small { color: var(--muted); font-size: 11px; }
+.rev-auto { color: var(--muted, #8b93a7); font-size: 13px; font-style: italic; margin: 2px 0 0; }
 .rev-item { display: inline-block; font-size: 11px; color: #22c55e; margin-bottom: 4px; }
 .rev-note { color: var(--muted); font-size: 12px; margin-top: 12px; text-align: center; }
 

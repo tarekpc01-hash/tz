@@ -20,6 +20,12 @@ function soldLabel(n) { return n >= 1000 ? (n / 1000).toFixed(1).replace(".0", "
 function reviewsOf(g) {
   return [...remoteReviews.filter(r => (r.gids || []).includes(g.id)), ...(g.reviews || [])];
 }
+/* نص الريفيو — الريفيو التلقائي (العميل مكتبش حاجة خلال 3 أيام) بيتعلّم بوضوح */
+function revText(r) {
+  return r.auto
+    ? `<p class="rev-auto">⏱ Automatic review — the buyer didn't leave feedback within ${AUTO_COMPLETE_DAYS} days.</p>`
+    : `<p>${esc(r.text)}</p>`;
+}
 function avgStars(list) { return list.length ? list.reduce((s, r) => s + r.stars, 0) / list.length : 0; }
 /* إحصائيات الاستور كله */
 function storeStats() {

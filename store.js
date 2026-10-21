@@ -45,7 +45,7 @@ function renderStore() {
           ${starsHtml(r.stars)}
         </div>
         ${g || r.item ? `<span class="rev-item">✔ Purchased: ${esc(r.item || "")}${g ? ` · <a href="${gameUrl(g)}">${esc(g.name)}</a>` : ""}</span>` : ""}
-        <p>${esc(r.text)}</p>
+        ${revText(r)}
       </div>`;
   }).join("") : `<p class="rev-empty">No reviews yet — reviews from customers show up here after each order.</p>`;
 

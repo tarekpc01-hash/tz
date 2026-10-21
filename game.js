@@ -270,7 +270,7 @@ function renderReviews() {
             ${starsHtml(r.stars)}
           </div>
           ${r.item ? `<span class="rev-item">✔ Purchased: ${esc(r.item)}</span>` : ""}
-          <p>${esc(r.text)}</p>
+          ${revText(r)}
         </div>`).join("")
     : `<p class="rev-empty">No reviews yet for ${game.name}.</p>`;
 }

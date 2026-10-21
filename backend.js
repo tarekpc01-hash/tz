@@ -173,7 +173,14 @@ const NX = (() => {
       return s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
     } catch (e) { console.error(e); return []; }
   }
-  const addReview = (orderId, r) => db.collection("reviews").doc(orderId).set({ ...r, uid: user.uid, createdAt: Date.now() });
+  const addReview = (orderId, r) => db.collection("reviews").doc(orderId).set({ ...r, uid: user.uid, auto: false, createdAt: Date.now() });
+  /* admin only: 5★ automatic review for an order the buyer didn't review within AUTO_COMPLETE_DAYS */
+  const addAutoReview = (o) => db.collection("reviews").doc(o.id).set({
+    uid: o.uid, name: o.buyerName || "Customer", photo: "", stars: 5, text: "", auto: true,
+    item: (o.items || []).map(i => i.label).join(", "),
+    gids: [...new Set((o.items || []).map(i => i.gid))],
+    createdAt: Date.now(),
+  });
 
   /* ---------- store stats (public, admin writes) ---------- */
   async function loadSales() {
@@ -221,6 +228,6 @@ const NX = (() => {
     enabled, onAuth, get user() { return user; }, get profile() { return profile; }, isAdmin, isAdminEmail, sendVerification, reloadUser,
     errText, signUp, signIn, signInGoogle, resetPassword, signOut, saveProfile,
     createOrder, watchMyOrders, watchOrder, updateOrder, submitPayment, cancelOrder, markReceived, openDispute,
-    watchMessages, sendMessage, createTicket, watchMyTickets, watchAllTickets, watchTicketMessages, sendTicketMessage, setTicketStatus, loadReviews, addReview, loadSales, addSales, setStats, loadPrices, savePrices, watchAllOrders, notifyOwner,
+    watchMessages, sendMessage, createTicket, watchMyTickets, watchAllTickets, watchTicketMessages, sendTicketMessage, setTicketStatus, loadReviews, addReview, addAutoReview, loadSales, addSales, setStats, loadPrices, savePrices, watchAllOrders, notifyOwner,
   };
 })();

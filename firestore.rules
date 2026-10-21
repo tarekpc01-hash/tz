@@ -107,10 +107,20 @@ service cloud.firestore {
     // ---------- reviews (public) - only after the buyer confirmed the order ----------
     match /reviews/{orderId} {
       allow read: if true;
+      // admin panel writes the automatic 5-star review (buyer didn't review within 3 days)
+      allow create: if isAdmin() && request.resource.data.auto == true;
       allow create: if signedIn()
         && orderDoc(orderId).data.uid == request.auth.uid
         && orderDoc(orderId).data.status == 'completed'
         && request.resource.data.uid == request.auth.uid
+        && request.resource.data.stars is int
+        && request.resource.data.stars >= 1 && request.resource.data.stars <= 5
+        && request.resource.data.text is string && request.resource.data.text.size() <= 500;
+      // the buyer can still replace the automatic review with his own review
+      allow update: if signedIn() && resource.data.auto == true
+        && orderDoc(orderId).data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.auto == false
         && request.resource.data.stars is int
         && request.resource.data.stars >= 1 && request.resource.data.stars <= 5
         && request.resource.data.text is string && request.resource.data.text.size() <= 500;

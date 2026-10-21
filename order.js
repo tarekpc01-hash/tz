@@ -125,7 +125,7 @@ function renderAction() {
   const o = order, box = $("#odAction");
   const keep = $("#disputeText") ? { text: $("#disputeText").value, r: ($("input[name=dr]:checked") || {}).value } : null;
   if (o.status !== "delivered") disputeFormOpen = false;
-  const reviewed = remoteReviews.some(r => r.id === o.id);
+  const reviewed = remoteReviews.some(r => r.id === o.id && !r.auto);   // an automatic review can still be replaced
   const msgs = {
     payment_submitted: `<h3 class="panel-title">🔎 Verifying your payment</h3>
       <p class="panel-sub">We're checking your transaction. This usually takes a few minutes — you'll see the status change here.</p>`,

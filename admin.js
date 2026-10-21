@@ -267,7 +267,15 @@ let autoRan = false;
 async function autoComplete() {
   if (autoRan) return; autoRan = true;
   const due = all.filter(o => o.status === "delivered" && o.deliveredAt && Date.now() - o.deliveredAt > AUTO_COMPLETE_DAYS * 864e5);
-  for (const o of due) { try { await NX.updateOrder(o.id, { status: "completed", completedAt: Date.now(), autoCompleted: true }); } catch (e) { console.error(e); } }
+  for (const o of due) { try { await NX.updateOrder(o.id, { status: "completed", completedAt: Date.now(), autoCompleted: true }); o.status = "completed"; } catch (e) { console.error(e); } }
+
+  /* بعد AUTO_COMPLETE_DAYS من التسليم: أي أوردر مكتمل العميل معملوش ريفيو بياخد ريفيو تلقائي 5 نجوم */
+  try {
+    const reviewed = new Set((await NX.loadReviews()).map(r => r.id));
+    const noReview = all.filter(o => o.status === "completed" && o.deliveredAt && !reviewed.has(o.id)
+                                  && Date.now() - o.deliveredAt > AUTO_COMPLETE_DAYS * 864e5);
+    for (const o of noReview) { try { await NX.addAutoReview(o); } catch (e) { console.error(e); } }
+  } catch (e) { console.error(e); }
 }
 
 /* ---------- events ---------- */
