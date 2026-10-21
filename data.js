@@ -25,32 +25,23 @@ const games = [
   { id: "ps99", type: "currency", name: "Pet Simulator 99", desc: "Diamonds", unit: "Diamonds",
     g: "linear-gradient(150deg,#22c55e,#0e7490)", sold: 860, img: "images/games/ps99.png", reviews: [],
     about: "Buy Pet Simulator 99 Diamonds safely and get them delivered to your Roblox account fast.",
-    packages: [
-      { amount: 10000000,  price: 2.99 },
-      { amount: 50000000,  price: 9.99, badge: "popular" },
-      { amount: 100000000, price: 17.99 },
-      { amount: 250000000, price: 39.99, badge: "best" },
-    ] },
+    /* كمية حرّة بالـ B: العميل بيكتب عدد البليون، والسعر = العدد × perUnit ($1.2 لكل 1B) */
+    custom: { perUnit: 1.2, suffix: "B", min: 1, max: 100, default: 5, presets: [1, 2, 5, 10, 25, 50], color: "#22c55e" },
+    packages: [] },
 
   { id: "bladeball", type: "currency", name: "Blade Ball Tokens", desc: "Tokens", unit: "Tokens",
     g: "linear-gradient(150deg,#f43f5e,#3b0764)", sold: 640, img: "images/games/bladeball.png", reviews: [],
     about: "Get Blade Ball Tokens to unlock swords, abilities and explosions.",
-    packages: [
-      { amount: 10000,  price: 1.99 },
-      { amount: 50000,  price: 7.99, badge: "popular" },
-      { amount: 100000, price: 14.99 },
-      { amount: 250000, price: 32.99, badge: "best" },
-    ] },
+    /* كمية حرّة بالـ K: العميل بيكتب عدد الألف، والسعر = العدد × perUnit ($2.5 لكل 1K) */
+    custom: { perUnit: 2.5, suffix: "K", min: 1, max: 500, default: 10, presets: [5, 10, 25, 50, 100, 250], color: "#f43f5e" },
+    packages: [] },
 
   { id: "robux", type: "currency", name: "Roblox Robux", desc: "Robux", unit: "Robux",
-    g: "linear-gradient(150deg,#64748b,#0f172a)", sold: 1520, img: "", reviews: [],
+    g: "linear-gradient(150deg,#ffd43b,#f59f00)", sold: 1520, img: "", reviews: [],
     about: "Top up Robux for your Roblox account and spend them in any experience.",
-    packages: [
-      { amount: 400,  price: 4.99 },
-      { amount: 800,  price: 9.99, badge: "popular" },
-      { amount: 1700, price: 19.99 },
-      { amount: 4500, price: 49.99, badge: "best" },
-    ] },
+    /* كمية حرّة: العميل بيكتب عدد الروبوكس، والسعر = العدد × perUnit */
+    custom: { perUnit: 0.006, min: 500, max: 100000, default: 1000, presets: [500, 1000, 2500, 5000, 10000, 25000], color: "#f59f00" },
+    packages: [] },
 
   /* ---------- Top Up ---------- */
   { id: "fortnite", type: "topup", name: "Fortnite", desc: "V-Bucks", unit: "V-Bucks",
@@ -71,6 +62,8 @@ const games = [
   { id: "apex", type: "topup", name: "Apex Legends", desc: "Apex Coins", unit: "Apex Coins",
     g: "linear-gradient(150deg,#dc2626,#450a0a)", sold: 540, img: "images/games/apex.png", reviews: [],
     about: "Get Apex Coins for legends, skins and the Battle Pass.",
+    coinImg: "images/games/apex-coin.png",   // أيقونة العملات جنب كل كمية
+    coinNumber: true,                         // الرقم تحت الأيقونة = نفس الكمية
     packages: [
       { amount: 6700,  price: 32.00,  old: 59.99 },
       { amount: 11500, price: 48.99,  old: 99.99,  badge: "popular" },
@@ -114,10 +107,13 @@ const games = [
     g: "linear-gradient(150deg,#eab308,#1d4ed8)", sold: 470, img: "images/games/pokemongo.png", reviews: [],
     about: "Get PokéCoins for items, storage upgrades and raid passes.",
     packages: [
-      { amount: 550,  price: 4.99 },
-      { amount: 1200, price: 9.99, badge: "popular" },
-      { amount: 2500, price: 19.99 },
-      { amount: 5600, price: 39.99, badge: "best" },
+      { amount: 1200,  price: 3.10,  old: 9.99,  icon: "images/games/pokemongo/c1200.png" },
+      { amount: 5200,  price: 11.61, old: 39.99, icon: "images/games/pokemongo/c5200.png",  badge: "popular" },
+      { amount: 14500, price: 28.87, old: 99.99, icon: "images/games/pokemongo/c14500.png" },
+      { amount: 15500, price: 29.34, old: 99.99, icon: "images/games/pokemongo/c15500.png", badge: "best" },
+      { label: "GO Pass Deluxe: October",            price: 2.82, old: 7.99,  icon: "images/games/pokemongo/pass_oct.png" },
+      { label: "GO Pass Deluxe: October + 10 Ranks", price: 3.20, old: 9.99,  icon: "images/games/pokemongo/pass_10.png" },
+      { label: "GO Pass Deluxe: October Ultra Box",  price: 4.57, old: 14.99, icon: "images/games/pokemongo/pass_ultra.png" },
     ] },
 
   { id: "genshin", type: "topup", name: "Genshin Impact Top Up", desc: "Genesis Crystals", unit: "Genesis Crystals",
@@ -201,10 +197,19 @@ function store(k, fallback) { try { const v = localStorage.getItem(k); return v 
 function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 const byId = (id) => games.find(g => g.id === id);
-const minPrice = (g) => Math.min(...g.packages.map(p => p.price));
+/* كمية حرّة (Robux): السعر = الكمية × perUnit، متقرّب لأقرب سنت */
+const customPrice = (g, amt) => Math.round(amt * g.custom.perUnit * 100) / 100;
+const validAmt = (g, amt) => g.custom && Number.isInteger(amt) && amt >= g.custom.min && amt <= g.custom.max;
+/* الباقة اللي العميل اختارها — ثابتة من packages أو محسوبة لو الكمية حرّة */
+function pkgFor(g, p, amt) {
+  if (!g) return null;
+  if (g.custom) return validAmt(g, amt) ? { amount: amt, price: customPrice(g, amt) } : null;
+  return g.packages[p] || null;
+}
+const minPrice = (g) => g.custom ? customPrice(g, g.custom.min) : Math.min(...g.packages.map(p => p.price));
 /* اسم الباقة: "4,500 V-Bucks" أو label زي "Welkin Moon" */
 const shortNum = (n) => n >= 1e6 ? (n / 1e6).toLocaleString("en-US") + "M" : n.toLocaleString("en-US");
-const pkgLabel = (g, p) => p.label || `${shortNum(p.amount)} ${g.unit}`;
+const pkgLabel = (g, p) => p.label || (g.custom && g.custom.suffix ? `${p.amount.toLocaleString("en-US")}${g.custom.suffix} ${g.unit}` : `${shortNum(p.amount)} ${g.unit}`);
 /* اسم الباقة + الاختيار (زي "5,900 FC Points · PC - with EA Membership") */
 const optLabel = (g, opt) => (g.options && opt != null && g.options.choices[opt]) ? g.options.choices[opt] : "";
 const itemLabel = (g, p, opt) => pkgLabel(g, p) + (optLabel(g, opt) ? ` · ${optLabel(g, opt)}` : "");

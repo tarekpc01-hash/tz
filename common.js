@@ -46,7 +46,7 @@ function toast(msg) {
 /* صورة اللعبة — ولو الصورة مش موجودة يرجع لأول حرف تلقائياً */
 function gameImg(g, phClass = "") {
   return g.img
-    ? `<img src="${g.img}" alt="${esc(g.name)}" data-l="${letter(g)}" data-ph="${phClass}" onerror="nxImgFail(this)">`
+    ? `<img src="${asset(g.img)}" alt="${esc(g.name)}" data-l="${letter(g)}" data-ph="${phClass}" onerror="nxImgFail(this)">`
     : `<span class="${phClass}">${letter(g)}</span>`;
 }
 function nxImgFail(el) {
@@ -84,15 +84,15 @@ function renderMenus() {
 /* ---------- Cart ---------- */
 function saveCart() { save("nx_cart2", cart); renderCart(); }
 
-function addToCart(gid, p, qty = 1, opt = null) {
-  const item = cart.find(i => i.gid === gid && i.p === p && (i.opt ?? null) === opt);
-  item ? item.qty += qty : cart.push({ gid, p, qty, opt });
+function addToCart(gid, p, qty = 1, opt = null, amt = null) {
+  const item = cart.find(i => i.gid === gid && i.p === p && (i.opt ?? null) === opt && (i.amt ?? null) === amt);
+  item ? item.qty += qty : cart.push({ gid, p, qty, opt, amt });
   saveCart();
-  toast(`✅ ${qty > 1 ? qty + " × " : ""}${pkgLabel(byId(gid), byId(gid).packages[p])} added to cart`);
+  toast(`✅ ${qty > 1 ? qty + " × " : ""}${pkgLabel(byId(gid), pkgFor(byId(gid), p, amt))} added to cart`);
 }
 
 function renderCart() {
-  cart = cart.filter(i => byId(i.gid) && byId(i.gid).packages[i.p]);
+  cart = cart.filter(i => pkgFor(byId(i.gid), i.p, i.amt));
   const count = cart.reduce((s, i) => s + i.qty, 0);
   $("#cartCount").textContent = count;
   $("#cartCount").hidden = count === 0;
@@ -104,7 +104,7 @@ function renderCart() {
   }
   let total = 0;
   $("#cartItems").innerHTML = cart.map((i, idx) => {
-    const g = byId(i.gid), pk = g.packages[i.p], label = pkgLabel(g, pk), price = pk.price, op = optLabel(g, i.opt);
+    const g = byId(i.gid), pk = pkgFor(g, i.p, i.amt), label = pkgLabel(g, pk), price = pk.price, op = optLabel(g, i.opt);
     total += price * i.qty;
     return `
       <div class="cart-item">
@@ -147,16 +147,34 @@ function goCheckout(items, fromCart = false) {
 }
 $("#checkoutBtn").addEventListener("click", () => {
   if (!cart.length) return toast("Your cart is empty");
-  goCheckout(cart.map(i => ({ gid: i.gid, p: i.p, qty: i.qty, opt: i.opt ?? null })), true);
+  goCheckout(cart.map(i => ({ gid: i.gid, p: i.p, qty: i.qty, opt: i.opt ?? null, amt: i.amt ?? null })), true);
 });
 
 /* ---------- Search ---------- */
 const searchInput = $("#searchInput");
 const searchBox = $("#searchResults");
 
+/* empty search box → Recently viewed on top, then Most popular (by orders) */
+const searchRow = (g, sub) => `
+  <a class="dd-item" href="${gameUrl(g)}">
+    ${tile(g)}
+    <span><strong>${g.name}</strong><small>${sub}</small></span>
+  </a>`;
+function showSuggestions() {
+  const rec = store("nx_recent", []).map(byId).filter(Boolean).slice(0, 4);
+  const popular = [...games].filter(g => !rec.includes(g)).sort((a, b) => totalSold(b) - totalSold(a));
+  searchBox.innerHTML =
+    (rec.length ? `<div class="dd-title">🕒 Recently viewed</div>` + rec.map(g => searchRow(g, `${TYPE_LABEL[g.type]} · From ${fmt(minPrice(g))}`)).join("") : "") +
+    `<div class="dd-title">🔥 Most popular</div>` +
+    popular.map(g => searchRow(g, `${TYPE_LABEL[g.type]} · From ${fmt(minPrice(g))}`)).join("");
+  searchBox.classList.add("show");
+}
+searchInput.addEventListener("focus", () => { if (!searchInput.value.trim()) showSuggestions(); });
+searchInput.addEventListener("click", () => { if (!searchInput.value.trim()) showSuggestions(); });
+
 searchInput.addEventListener("input", () => {
   const q = searchInput.value.trim().toLowerCase();
-  if (!q) return closeSearch();
+  if (!q) return showSuggestions();
   const hits = games.filter(g => (g.name + " " + g.desc + " " + TYPE_LABEL[g.type]).toLowerCase().includes(q));
   searchBox.innerHTML = hits.length
     ? hits.map(g => `
@@ -365,9 +383,15 @@ let myOrders = [];
 let stopOrders = null;
 const seenKey = () => "nx_bell_seen_" + (NX.user ? NX.user.uid : "guest");
 
+/* "Clear" hides orders from the bell only (they stay in My orders).
+   An order shows up again in the bell if its status changes after you cleared. */
+const clearedKey = () => "nx_bell_cleared_" + (NX.user ? NX.user.uid : "guest");
+const bellOrders = () => { const t = store(clearedKey(), 0); return myOrders.filter(o => (o.updatedAt || o.createdAt) > t); };
+
 function renderBell() {
   const lastSeen = store(seenKey(), 0);
-  const unseen = NX.user ? myOrders.filter(o => (o.updatedAt || o.createdAt) > lastSeen).length : 0;
+  const list = NX.user ? bellOrders() : [];
+  const unseen = list.filter(o => (o.updatedAt || o.createdAt) > lastSeen).length;
   $("#bellCount").hidden = unseen === 0;
   $("#bellCount").textContent = unseen;
 
@@ -376,8 +400,10 @@ function renderBell() {
     body = `<div class="pop-empty">🔔<p>Sign in to see your orders</p><button class="btn btn-primary" data-bell="login" style="margin-top:12px;padding:8px 18px;font-size:13px">Sign in</button></div>`;
   } else if (!myOrders.length) {
     body = `<div class="pop-empty">🔔<p>No orders yet</p><small>Your orders and their status will show up here.</small></div>`;
+  } else if (!list.length) {
+    body = `<div class="pop-empty">🔔<p>You're all caught up</p><small>New order updates will show up here.</small></div>`;
   } else {
-    body = myOrders.slice(0, 15).map(o => {
+    body = list.slice(0, 15).map(o => {
       const first = o.items[0], g = byId(first.gid);
       return `
         <a class="order-row" href="order.html?id=${o.id}">
@@ -392,7 +418,8 @@ function renderBell() {
     }).join("");
   }
   $("#bellMenu").innerHTML = `
-    <div class="pop-head"><strong>My orders</strong>${myOrders.length ? `<small>${myOrders.length}</small>` : ""}</div>
+    <div class="pop-head"><strong>My orders</strong>
+      ${list.length ? `<button class="bell-clear" data-bell="clear">Clear</button>` : ""}</div>
     <div class="pop-list">${body}</div>
     ${NX.user && myOrders.length ? `<a class="pop-foot" href="orders.html">View all orders →</a>` : ""}`;
 }
@@ -403,6 +430,13 @@ function markOrdersSeen() {
 }
 $("#bellMenu").addEventListener("click", e => {
   if (e.target.closest('[data-bell="login"]')) { e.stopPropagation(); closePops(); openLogin(); }
+  if (e.target.closest('[data-bell="clear"]')) {
+    e.stopPropagation();
+    save(clearedKey(), Date.now());
+    markOrdersSeen();
+    renderBell();
+    toast("🔔 Cleared — your orders are still in My orders");
+  }
 });
 
 /* =========================================================

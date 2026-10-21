@@ -3,14 +3,14 @@
 let co = null;
 try { co = JSON.parse(sessionStorage.getItem("nx_checkout") || "null"); } catch {}
 const coItems = ((co && co.items) || [])
-  .map(i => ({ ...i, g: byId(i.gid) }))
-  .filter(i => i.g && i.g.packages[i.p] && i.qty > 0);
+  .map(i => ({ ...i, g: byId(i.gid), pk: pkgFor(byId(i.gid), i.p, i.amt) }))
+  .filter(i => i.g && i.pk && i.qty > 0);
 
 let payMethod = store("nx_paymethod", "usdt_trc20");
 let ltcRate = null, ltcErr = false;
 
 const walletReady = (m) => typeof WALLETS !== "undefined" && WALLETS[m] && !WALLETS[m].startsWith("PUT_");
-const totalUsd = () => coItems.reduce((s, i) => s + i.g.packages[i.p].price * i.qty, 0);
+const totalUsd = () => coItems.reduce((s, i) => s + i.pk.price * i.qty, 0);
 const round2 = (n) => Math.round(n * 100) / 100;
 
 function cryptoAmount(m) {
@@ -32,7 +32,7 @@ function renderCheckout() {
 
   /* items */
   $("#coItems").innerHTML = coItems.map(i => {
-    const pk = i.g.packages[i.p], op = optLabel(i.g, i.opt);
+    const pk = i.pk, op = optLabel(i.g, i.opt);
     return `
       <div class="co-item">
         ${tile(i.g)}
@@ -133,9 +133,9 @@ $("#placeBtn").addEventListener("click", async () => {
     const m = PAY_METHODS[payMethod];
     const order = {
       items: coItems.map(i => {
-        const pk = i.g.packages[i.p];
+        const pk = i.pk;
         return { gid: i.gid, gameName: i.g.name, p: i.p, label: pkgLabel(i.g, pk), opt: i.opt ?? null,
-                 optLabel: optLabel(i.g, i.opt) || "", qty: i.qty, price: pk.price };
+                 optLabel: optLabel(i.g, i.opt) || "", qty: i.qty, price: pk.price, amount: pk.amount || null };
       }),
       fields: inputs.map(i => ({ gid: i.dataset.gid, gameName: byId(i.dataset.gid).name, label: i.dataset.label, value: i.value.trim() })),
       total: round2(totalUsd()),

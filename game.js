@@ -5,6 +5,7 @@ const game = byId(params.get("id"));
 let selected = 0;   // package index (بيبدأ على Popular لو موجود)
 let qty = 1;
 let opt = null;   // الاختيار (زي Game device)
+let amt = null;   // الكمية الحرّة (Robux)
 const COIN_COLORS = ["#a1a1aa", "#22c55e", "#3b82f6", "#6366f1", "#a855f7", "#eab308", "#f97316", "#ec4899", "#ef4444"];
 
 if (!game) {
@@ -24,6 +25,7 @@ if (!game) {
 
   selected = Math.max(0, game.packages.findIndex(p => p.badge === "popular"));
   if (game.options) opt = game.options.default ?? 0;
+  if (game.custom) { amt = game.custom.default; document.querySelector(".qty-row").hidden = true; }
   setupOrder();
   window.pageRender = renderGame;
   renderGame();
@@ -71,7 +73,7 @@ function renderGame() {
     <p class="about-text">${g.about || ""}</p>
     <h3 class="panel-title">How it works</h3>
     <ol class="steps">
-      <li><span>1</span><div><strong>Choose amount</strong><small>Pick the ${g.desc} package and quantity.</small></div></li>
+      <li><span>1</span><div><strong>Choose amount</strong><small>${g.custom ? `Type how many ${g.unit} you want.` : `Pick the ${g.desc} package and quantity.`}</small></div></li>
       <li><span>2</span><div><strong>Pay securely</strong><small>Complete your payment in seconds.</small></div></li>
       <li><span>3</span><div><strong>Get it delivered</strong><small>Your order arrives in about ${DELIVERY_TIME}.</small></div></li>
     </ol>`;
@@ -92,11 +94,14 @@ function perUnit(p) {
 }
 
 /* أيقونة العملة: صورة اللعبة لو موجودة (coinImg) — وإلا دايرة ملونة */
-function coinHtml(i) {
+function coinHtml(i, withNumber = true) {
   const icon = game.packages[i] && game.packages[i].icon;
-  if (icon) return `<img class="coin-img" src="${icon}" alt="">`;
+  if (icon) return `<img class="coin-img" src="${asset(icon)}" alt="">`;
+  const pk = game.packages[i];
+  if (game.coinImg && game.coinNumber && withNumber && pk && pk.amount)
+    return `<span class="coin-stack"><img class="coin-img" src="${asset(game.coinImg)}" alt=""><small>${pk.amount.toLocaleString("en-US")}</small></span>`;
   return game.coinImg
-    ? `<img class="coin-img" src="${game.coinImg}" alt="">`
+    ? `<img class="coin-img" src="${asset(game.coinImg)}" alt="">`
     : `<span class="coin" style="--c:${COIN_COLORS[i % COIN_COLORS.length]}">${game.unit.charAt(0)}</span>`;
 }
 
@@ -118,8 +123,37 @@ function renderAmountTop() {
   $("#amountTop").innerHTML = html;
 }
 
+/* ---------- كمية حرّة (Robux): العميل بيكتب العدد ---------- */
+/* سعر الوحدة الصغير (زي $0.006) — من غير تقريب لسنتين */
+function fmtUnit(usd) {
+  const v = usd * rates[currency];
+  return symbols[currency] + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+}
+function renderCustom() {
+  const c = game.custom;
+  $("#amounts").className = "custom-amt";
+  $("#amounts").innerHTML = `
+    <div class="ca-presets">
+      ${c.presets.map(n => `<button type="button" class="ca-chip ${n === amt ? "selected" : ""}" data-amt="${n}">${n.toLocaleString("en-US")}${c.suffix || ""}</button>`).join("")}
+    </div>
+    <label class="ca-box">
+      <span class="coin" style="--c:${c.color || "#f59f00"}">${game.unit.charAt(0)}</span>
+      <input type="number" id="caInput" inputmode="numeric" min="${c.min}" max="${c.max}" step="1" value="${amt ?? ""}" placeholder="Enter amount">
+      <span class="ca-unit">${c.suffix ? c.suffix + " " : ""}${game.unit}</span>
+    </label>
+    <div class="ca-info">
+      <span>${c.suffix
+        ? `Price: <strong>${fmt(c.perUnit)}</strong> per 1${c.suffix} ${game.unit}`
+        : `Price: <strong>${fmtUnit(c.perUnit)}</strong> per ${game.unit.replace(/s$/, "")} · <strong>${fmt(c.perUnit * 1000)}</strong> per 1,000`}</span>
+      <span>Min ${c.min.toLocaleString("en-US")}${c.suffix || ""} · Max ${c.max.toLocaleString("en-US")}${c.suffix || ""}</span>
+    </div>
+    <p class="ca-err" id="caErr" hidden></p>`;
+  updateTotal();
+}
+
 function renderAmounts() {
   renderAmountTop();
+  if (game.custom) return renderCustom();
   $("#amounts").innerHTML = game.packages.map((p, i) => {
     const pct = p.old ? Math.round((1 - p.price / p.old) * 100) : 0;
     const badge = p.badge === "popular" ? `<span class="amt-badge popular">★ Popular</span>`
@@ -142,9 +176,27 @@ function renderAmounts() {
 
 /* ---------- Right: your order + quantity + Pay ---------- */
 function updateTotal() {
+  if (game.custom) {
+    const p = pkgFor(game, 0, amt), c = game.custom;
+    const err = $("#caErr");
+    if (err) {
+      err.hidden = !!p;
+      const sx = c.suffix || "";
+      if (!p) err.textContent = !amt ? "Enter how many " + game.unit + " you want." : amt < c.min ? `Minimum is ${c.min.toLocaleString("en-US")}${sx} ${game.unit}.` : amt > c.max ? `Maximum is ${c.max.toLocaleString("en-US")}${sx} ${game.unit}.` : "Enter a whole number.";
+    }
+    $("#selItem").innerHTML = `
+      <span class="coin" style="--c:${c.color || "#f59f00"}">${game.unit.charAt(0)}</span>
+      <span class="sel-info"><strong>${p ? pkgLabel(game, p) : "—"}</strong><small>${game.name}</small></span>
+      <span class="sel-price">${p ? fmt(p.price) : "—"}</span>`;
+    $("#deliveryTime").textContent = DELIVERY_TIME;
+    $("#orderTotal").textContent = p ? fmt(p.price) : "—";
+    $("#payBtn").disabled = !p; $("#addCartBtn").disabled = !p;
+    $$(".ca-chip").forEach(b => b.classList.toggle("selected", +b.dataset.amt === amt));
+    return;
+  }
   const p = game.packages[selected];
   $("#selItem").innerHTML = `
-    ${coinHtml(selected)}
+    ${coinHtml(selected, false)}
     <span class="sel-info"><strong>${pkgLabel(game, p)}</strong><small>${game.name}${optLabel(game, opt) ? " · " + optLabel(game, opt) : ""}</small></span>
     <span class="sel-price">${fmt(p.price)}</span>`;
   $("#deliveryTime").textContent = DELIVERY_TIME;
@@ -160,6 +212,8 @@ function setupOrder() {
     renderAmounts();
   });
   $("#amounts").addEventListener("click", e => {
+    const chip = e.target.closest(".ca-chip");
+    if (chip) { amt = +chip.dataset.amt; $("#caInput").value = amt; updateTotal(); return; }
     const b = e.target.closest(".amt");
     if (!b) return;
     selected = +b.dataset.i;
@@ -172,9 +226,20 @@ function setupOrder() {
     updateTotal();
   });
 
-  $("#addCartBtn").addEventListener("click", () => addToCart(game.id, selected, qty, opt));
+  $("#amounts").addEventListener("input", e => {
+    if (e.target.id !== "caInput") return;
+    const v = e.target.value.trim();
+    amt = v === "" ? null : Number(v);
+    updateTotal();
+  });
+
+  $("#addCartBtn").addEventListener("click", () => {
+    if (game.custom) { if (pkgFor(game, 0, amt)) addToCart(game.id, 0, 1, null, amt); return; }
+    addToCart(game.id, selected, qty, opt);
+  });
 
   $("#payBtn").addEventListener("click", () => {
+    if (game.custom) { if (pkgFor(game, 0, amt)) goCheckout([{ gid: game.id, p: 0, qty: 1, opt: null, amt }]); return; }
     goCheckout([{ gid: game.id, p: selected, qty, opt }]);
   });
 }

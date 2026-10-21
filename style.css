@@ -730,3 +730,45 @@ button.avatar-btn:hover { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--orang
 .adm-stat.danger { border-color: rgba(239,68,68,.6); background: linear-gradient(180deg, rgba(239,68,68,.14), var(--card)); }
 .adm-stat.danger strong { color: #f87171; }
 @media (max-width: 1180px) { .adm-stats { grid-template-columns: repeat(3, 1fr); } }
+
+/* bell: clear button */
+.bell-clear { font-size: 12px; font-weight: 600; color: var(--muted); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); transition: .15s; }
+.bell-clear:hover { color: var(--orange); border-color: var(--orange); }
+
+/* search suggestions */
+.search-results { max-height: 70vh; overflow-y: auto; }
+.search-results .dd-title { padding-top: 10px; }
+.search-results .dd-title:first-child { padding-top: 6px; }
+
+/* coin icon with the amount under it (Apex) */
+.coin-stack { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; }
+.coin-stack small { font-size: 9px; font-weight: 600; color: var(--muted); letter-spacing: .2px; line-height: 1; }
+
+/* ===== Custom amount (Robux) ===== */
+.custom-amt { display: grid; gap: 14px; }
+.ca-presets { display: flex; gap: 8px; flex-wrap: wrap; }
+.ca-chip { padding: 9px 16px; border-radius: 10px; background: var(--card-2); border: 1.5px solid var(--border); font-size: 14px; font-weight: 700; transition: .15s; }
+.ca-chip:hover { border-color: #4a4a66; }
+.ca-chip.selected { border-color: #ffc531; background: rgba(255,197,49,.1); }
+.ca-box { display: flex; align-items: center; gap: 12px; background: var(--card-2); border: 1.5px solid var(--border); border-radius: 14px; padding: 12px 16px; cursor: text; }
+.ca-box:focus-within { border-color: var(--orange); }
+.ca-box .coin { width: 38px; height: 38px; font-size: 16px; }
+.ca-box input { flex: 1; min-width: 0; background: none; border: none; outline: none; color: var(--text); font-family: inherit; font-size: 26px; font-weight: 800; -moz-appearance: textfield; }
+.ca-box input::-webkit-outer-spin-button, .ca-box input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ca-unit { color: var(--muted); font-weight: 600; }
+.ca-info { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.ca-info strong { color: #8ee35a; }
+.ca-err { color: #fca5a5; font-size: 13px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* phone width fixes */
+.amount-panel, .panel { min-width: 0; }
+.ca-box input { width: 100%; }
+.custom-amt { min-width: 0; }
+@media (max-width: 640px) {
+  .trending-list { grid-template-columns: minmax(0, 1fr); }
+  .trend { min-width: 0; gap: 10px; padding: 12px; }
+  .trend .rank { width: 28px; font-size: 18px; }
+  .ca-box input { font-size: 22px; }
+  .ca-chip { padding: 8px 12px; font-size: 13px; }
+}

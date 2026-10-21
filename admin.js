@@ -15,7 +15,7 @@ const copySvg = `<svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="1
 function expectedTotal(o) {
   let sum = 0, unknown = false;
   o.items.forEach(i => {
-    const g = byId(i.gid), pk = g && g.packages[i.p];
+    const g = byId(i.gid), pk = g && pkgFor(g, i.p, i.amount);
     if (!pk) unknown = true; else sum += pk.price * i.qty;
   });
   return unknown ? null : Math.round(sum * 100) / 100;
@@ -143,7 +143,7 @@ function render() {
 
 /* tiny version of gameImg/letter (admin page has no common.js) */
 function gameImg(g) {
-  return g.img ? `<img src="${g.img}" alt="" onerror="this.replaceWith(document.createTextNode('${letter(g)}'))">` : letter(g);
+  return g.img ? `<img src="${asset(g.img)}" alt="" onerror="this.replaceWith(document.createTextNode('${letter(g)}'))">` : letter(g);
 }
 
 /* ---------- detail ---------- */
