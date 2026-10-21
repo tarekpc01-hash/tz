@@ -1,0 +1,99 @@
+rules_version = '2';
+
+// NILORIX - Firestore security rules (admin: nilorixstore@gmail.com)
+
+// =====================================================================
+// NILORIX - Firestore security rules
+// =====================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      // email_verified: stops anyone from registering your email with a password before you do
+      return signedIn() && request.auth.token.email != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() in ['nilorixstore@gmail.com'];
+    }
+    function orderDoc(id) { return get(/databases/$(database)/documents/orders/$(id)); }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // ---------- user profiles ----------
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.size() < 10;   // name, email, photo (small), createdAt
+      allow delete: if false;
+    }
+
+    // ---------- orders ----------
+    match /orders/{orderId} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+
+      // buyer creates a new order for himself, always starting as "awaiting_payment"
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'awaiting_payment'
+        && request.resource.data.items is list
+        && request.resource.data.items.size() > 0
+        && request.resource.data.items.size() <= 30;
+
+      // admin can update anything - buyer can only do these steps:
+      //   awaiting_payment -> payment_submitted (adds TX hash)
+      //   awaiting_payment -> cancelled
+      //   delivered        -> completed (order received)
+      //   delivered        -> disputed  (didn't receive it - opens a dispute)
+      //   disputed         -> completed (received it after all)
+      allow update: if isAdmin() || (
+        signedIn() && resource.data.uid == request.auth.uid && (
+          (resource.data.status == 'awaiting_payment' && request.resource.data.status == 'payment_submitted'
+             && changed().hasOnly(['status', 'txHash', 'paidAt', 'updatedAt'])
+             && request.resource.data.txHash is string && request.resource.data.txHash.size() > 10
+             && request.resource.data.txHash.size() < 200)
+          || (resource.data.status == 'awaiting_payment' && request.resource.data.status == 'cancelled'
+             && changed().hasOnly(['status', 'cancelledBy', 'updatedAt']))
+          || ((resource.data.status == 'delivered' || resource.data.status == 'disputed')
+             && request.resource.data.status == 'completed'
+             && changed().hasOnly(['status', 'completedAt', 'updatedAt']))
+          || (resource.data.status == 'delivered' && request.resource.data.status == 'disputed'
+             && changed().hasOnly(['status', 'disputeReason', 'disputedAt', 'updatedAt'])
+             && request.resource.data.disputeReason is string
+             && request.resource.data.disputeReason.size() > 0 && request.resource.data.disputeReason.size() <= 1200)
+        )
+      );
+      allow delete: if isAdmin();
+
+      // ---------- chat inside each order ----------
+      match /messages/{msgId} {
+        allow read: if signedIn() && (isAdmin() || orderDoc(orderId).data.uid == request.auth.uid);
+        allow create: if signedIn()
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 1000
+          && ( (isAdmin() && request.resource.data.from == 'admin')
+            || (orderDoc(orderId).data.uid == request.auth.uid && request.resource.data.from == 'buyer') );
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    // ---------- reviews (public) - only after the buyer confirmed the order ----------
+    match /reviews/{orderId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && orderDoc(orderId).data.uid == request.auth.uid
+        && orderDoc(orderId).data.status == 'completed'
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.stars is int
+        && request.resource.data.stars >= 1 && request.resource.data.stars <= 5
+        && request.resource.data.text is string && request.resource.data.text.size() <= 500;
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- public store stats (orders count) ----------
+    match /stats/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

@@ -5,11 +5,11 @@ function gameCard(g) {
     <a class="game-card" href="${gameUrl(g)}">
       <div class="game-art" style="--g:${g.g}">
         <span class="type-pill">${TYPE_LABEL[g.type]}</span>
-        ${g.img ? `<img src="${g.img}" alt="${g.name}">` : `<span class="ph">${letter(g)}</span>`}
+        ${gameImg(g, "ph")}
       </div>
       <div class="game-body">
         <div class="game-name">${g.name}</div>
-        <div class="game-meta">${g.desc} · 🔥 ${soldLabel(totalSold(g))} sold</div>
+        <div class="game-meta">${g.desc}</div>
         <div class="game-foot">
           <span class="from">From<strong>${fmt(minPrice(g))}</strong></span>
           <span class="go">${arrowSvg}</span>

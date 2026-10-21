@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order — NILORIX</title>
+  <meta name="description" content="NILORIX — Your ultimate destination for gaming & digital products.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="images/logo.png" type="image/png">
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">
+        <img src="images/logo.png" alt="NILORIX logo">
+        <span>NILORIX</span>
+      </a>
+
+      <nav class="nav" id="nav">
+
+        <!-- Currency dropdown -->
+        <div class="dd" data-type="currency">
+          <button class="nav-link dd-btn" type="button">
+            Currency
+            <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="dd-menu" data-menu="currency"></div>
+        </div>
+
+        <!-- Top Up dropdown -->
+        <div class="dd" data-type="topup">
+          <button class="nav-link dd-btn" type="button">
+            Top Up
+            <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="dd-menu" data-menu="topup"></div>
+        </div>
+      </nav>
+
+      <div class="header-tools">
+        <div class="search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input type="text" id="searchInput" placeholder="Search for games, currency, top up..." autocomplete="off">
+          <div class="search-results" id="searchResults"></div>
+        </div>
+        <select id="currency" class="currency" aria-label="Currency">
+          <option value="USD">USD</option>
+          <option value="EGP">EGP</option>
+          <option value="EUR">EUR</option>
+        </select>
+        <button class="icon-btn cart-btn" id="cartBtn" aria-label="Cart">
+          <svg viewBox="0 0 24 24"><path d="M3 4h2l2.5 11h11L21 7H6.5"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>
+          <span class="cart-count" id="cartCount">0</span>
+        </button>
+
+        <!-- Bell: orders -->
+        <div class="hd-pop" id="bellWrap">
+          <button class="icon-btn" id="bellBtn" aria-label="Orders">
+            <svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            <span class="cart-count" id="bellCount" hidden>0</span>
+          </button>
+          <div class="pop-menu bell-menu" id="bellMenu"></div>
+        </div>
+
+        <button class="icon-btn menu-btn" id="menuBtn" aria-label="Menu">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+
+        <!-- Profile circle (far right) -->
+        <div class="hd-pop" id="profileWrap">
+          <button class="avatar-btn" id="avatarBtn" aria-label="Account"></button>
+          <div class="pop-menu profile-menu" id="profileMenu"></div>
+        </div>
+        <input type="file" id="photoInput" accept="image/*" hidden>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== ORDER ===== -->
+  <main class="container page">
+    <nav class="crumbs"><a href="index.html">Home</a><span>/</span><a href="orders.html">My orders</a><span>/</span><strong id="crumbId">Order</strong></nav>
+
+    <div class="not-found" id="odGate" hidden>
+      <h2 id="odGateTitle">Sign in to see this order</h2>
+      <p class="muted" id="odGateText">This order belongs to an account.</p>
+      <button class="btn btn-primary" id="odGateBtn">Sign in</button>
+    </div>
+
+    <div id="odWrap" hidden>
+      <div class="od-head">
+        <div>
+          <h1 class="page-title" id="odTitle">Order</h1>
+          <p class="panel-sub" id="odDate"></p>
+        </div>
+        <div id="odStatus"></div>
+      </div>
+
+      <div class="od-steps" id="odSteps"></div>
+
+      <div class="co-grid">
+        <div class="co-left">
+          <section class="panel pay-box" id="payBox" hidden></section>
+          <section class="panel" id="odAction" hidden></section>
+
+          <section class="panel chat">
+            <h3 class="panel-title">💬 Chat with Nilorix</h3>
+            <div class="chat-list" id="chatList"></div>
+            <form class="chat-form" id="chatForm">
+              <input type="text" id="chatInput" maxlength="1000" placeholder="Write a message…" autocomplete="off">
+              <button class="btn btn-primary" type="submit">Send</button>
+            </form>
+          </section>
+        </div>
+
+        <aside class="co-right">
+          <div class="panel">
+            <h3 class="panel-title">Order details</h3>
+            <div class="co-items" id="odItems"></div>
+            <div class="total-row"><span>Total</span><strong id="odTotal"></strong></div>
+            <div class="od-kv" id="odPayInfo"></div>
+          </div>
+          <div class="panel">
+            <h3 class="panel-title">Game account</h3>
+            <div class="od-kv" id="odFields"></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer" id="support">
+    <div class="container footer-inner">
+      <div>
+        <a href="index.html" class="logo"><img src="images/logo.png" alt=""><span>NILORIX</span></a>
+        <p class="muted">Your ultimate destination for gaming &amp; digital products.</p>
+      </div>
+      <div>
+        <h4>Currency</h4>
+        <div id="footerCurrency"></div>
+      </div>
+      <div>
+        <h4>Top Up</h4>
+        <div id="footerTopup"></div>
+      </div>
+      <div>
+        <h4>Support</h4>
+        <a href="mailto:support@nilorix.com">support@nilorix.com</a>
+        <p class="muted">24/7 Live Support</p>
+      </div>
+    </div>
+    <p class="copy">© <span id="year"></span> NILORIX. All rights reserved.</p>
+  </footer>
+
+  <!-- ===== CART DRAWER ===== -->
+  <div class="overlay" id="overlay"></div>
+  <aside class="cart" id="cart">
+    <div class="cart-head">
+      <h3>Your Cart</h3>
+      <button class="icon-btn" id="closeCart" aria-label="Close">✕</button>
+    </div>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="cart-foot">
+      <div class="cart-total"><span>Total</span><strong id="cartTotal">$0.00</strong></div>
+      <button class="btn btn-primary btn-block" id="checkoutBtn">Checkout</button>
+    </div>
+  </aside>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Firebase (accounts + orders) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="config.js"></script>
+  <script src="data.js"></script>
+  <script src="backend.js"></script>
+  <script src="common.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="order.js"></script>
+</body>
+</html>

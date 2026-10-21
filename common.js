@@ -1,149 +1,29 @@
-/* ================= NILORIX — shared (كل الصفحات) ================= */
-
-/* =========================================================
-   الألعاب — عدّل من هنا بس
-   type    : "currency" أو "topup"  (يحدد هي في أنهي ليستة)
-   unit    : اسم العملة اللي بتظهر في كروت الكمية (V-Bucks, Robux...)
-   sold    : عدد الأوردرات — حط الرقم الحقيقي (الأكثر مبيعاً بيترتب على حسبه)
-   img     : صورة اللعبة (اختياري) مثلاً "images/games/robux.png"
-   packages: كل باقة = { amount: الكمية, price: السعر بالدولار,
-                         old: السعر الأصلي قبل الخصم (اختياري),
-                         badge: "popular" أو "best" (اختياري),
-                         label: اسم بدل الكمية (اختياري، زي Welkin Moon) }
-   reviews : تقييمات حقيقية من عملائك، مثال:
-             { name: "Ahmed", stars: 5, text: "Fast delivery!", item: "800 V-Bucks", date: "2026-10-20" }
-   ========================================================= */
-const games = [
-  /* ---------- Currency ---------- */
-  { id: "ps99", type: "currency", name: "Pet Simulator 99", desc: "Diamonds", unit: "Diamonds",
-    g: "linear-gradient(150deg,#22c55e,#0e7490)", sold: 860, img: "", reviews: [],
-    about: "Buy Pet Simulator 99 Diamonds safely and get them delivered to your Roblox account fast.",
-    packages: [
-      { amount: 10000000,  price: 2.99 },
-      { amount: 50000000,  price: 9.99, badge: "popular" },
-      { amount: 100000000, price: 17.99 },
-      { amount: 250000000, price: 39.99, badge: "best" },
-    ] },
-
-  { id: "bladeball", type: "currency", name: "Blade Ball Tokens", desc: "Tokens", unit: "Tokens",
-    g: "linear-gradient(150deg,#f43f5e,#3b0764)", sold: 640, img: "", reviews: [],
-    about: "Get Blade Ball Tokens to unlock swords, abilities and explosions.",
-    packages: [
-      { amount: 10000,  price: 1.99 },
-      { amount: 50000,  price: 7.99, badge: "popular" },
-      { amount: 100000, price: 14.99 },
-      { amount: 250000, price: 32.99, badge: "best" },
-    ] },
-
-  { id: "robux", type: "currency", name: "Roblox Robux", desc: "Robux", unit: "Robux",
-    g: "linear-gradient(150deg,#64748b,#0f172a)", sold: 1520, img: "", reviews: [],
-    about: "Top up Robux for your Roblox account and spend them in any experience.",
-    packages: [
-      { amount: 400,  price: 4.99 },
-      { amount: 800,  price: 9.99, badge: "popular" },
-      { amount: 1700, price: 19.99 },
-      { amount: 4500, price: 49.99, badge: "best" },
-    ] },
-
-  /* ---------- Top Up ---------- */
-  { id: "fortnite", type: "topup", name: "Fortnite", desc: "V-Bucks", unit: "V-Bucks",
-    g: "linear-gradient(150deg,#ffb020,#ea580c)", sold: 1380, img: "", reviews: [],
-    about: "Top up V-Bucks for skins, emotes and the Battle Pass.",
-    packages: [
-      { amount: 800,    price: 3.50,   old: 8.99 },
-      { amount: 2400,   price: 9.96,   old: 22.99 },
-      { amount: 4500,   price: 14.84,  old: 36.99, badge: "popular" },
-      { amount: 9000,   price: 25.00,  old: 73.98 },
-      { amount: 12500,  price: 31.99,  old: 89.99 },
-      { amount: 25000,  price: 64.00,  old: 179.98 },
-      { amount: 50000,  price: 124.99, old: 359.96 },
-      { amount: 62500,  price: 155.00, old: 449.95 },
-      { amount: 125000, price: 308.00, old: 899.90, badge: "best" },
-    ] },
-
-  { id: "apex", type: "topup", name: "Apex Legends", desc: "Apex Coins", unit: "Apex Coins",
-    g: "linear-gradient(150deg,#dc2626,#450a0a)", sold: 540, img: "", reviews: [],
-    about: "Get Apex Coins for legends, skins and the Battle Pass.",
-    packages: [
-      { amount: 1000,  price: 9.99 },
-      { amount: 2150,  price: 19.99, badge: "popular" },
-      { amount: 4350,  price: 39.99 },
-      { amount: 11500, price: 99.99, badge: "best" },
-    ] },
-
-  { id: "eafc", type: "topup", name: "EA Sports FC Points", desc: "FC Points", unit: "FC Points",
-    g: "linear-gradient(150deg,#10b981,#0c4a6e)", sold: 910, img: "", reviews: [],
-    about: "Top up FC Points for Ultimate Team packs and more.",
-    packages: [
-      { amount: 500,  price: 4.99 },
-      { amount: 1050, price: 9.99 },
-      { amount: 2800, price: 24.99, badge: "popular" },
-      { amount: 5900, price: 49.99, badge: "best" },
-    ] },
-
-  { id: "pokemongo", type: "topup", name: "Pokémon GO Top Up", desc: "PokéCoins", unit: "PokéCoins",
-    g: "linear-gradient(150deg,#eab308,#1d4ed8)", sold: 470, img: "", reviews: [],
-    about: "Get PokéCoins for items, storage upgrades and raid passes.",
-    packages: [
-      { amount: 550,  price: 4.99 },
-      { amount: 1200, price: 9.99, badge: "popular" },
-      { amount: 2500, price: 19.99 },
-      { amount: 5600, price: 39.99, badge: "best" },
-    ] },
-
-  { id: "genshin", type: "topup", name: "Genshin Impact Top Up", desc: "Genesis Crystals", unit: "Genesis Crystals",
-    g: "linear-gradient(150deg,#a78bfa,#1e1b4b)", sold: 780, img: "", reviews: [],
-    about: "Top up Genesis Crystals and Welkin Moon for your Genshin account.",
-    packages: [
-      { label: "Welkin Moon", sub: "30 days", price: 4.99, badge: "popular" },
-      { amount: 980,  price: 14.99 },
-      { amount: 1980, price: 29.99 },
-      { amount: 3280, price: 49.99, badge: "best" },
-    ] },
-];
-
-const TYPE_LABEL = { currency: "Currency", topup: "Top Up" };
-const SELLER = { name: "Nilorix", logo: "images/logo.png" };
-const DELIVERY_TIME = "20 minutes";   // وقت وصول الأوردر — عدّله من هنا
-
-/* ---------- Currency conversion ---------- */
-const rates   = { USD: 1, EGP: 48.5, EUR: 0.92 };   // عدّل سعر الصرف من هنا
-const symbols = { USD: "$", EGP: "EGP ", EUR: "€" };
-
-/* ---------- Helpers ---------- */
-const $ = (s) => document.querySelector(s);
-const $$ = (s) => document.querySelectorAll(s);
-function store(k, fallback) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; } catch { return fallback; } }
-function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
-function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
-const byId = (id) => games.find(g => g.id === id);
-const minPrice = (g) => Math.min(...g.packages.map(p => p.price));
-/* اسم الباقة: "4,500 V-Bucks" أو label زي "Welkin Moon" */
-const shortNum = (n) => n >= 1e6 ? (n / 1e6).toLocaleString("en-US") + "M" : n.toLocaleString("en-US");
-const pkgLabel = (g, p) => p.label || `${shortNum(p.amount)} ${g.unit}`;
-const letter = (g) => g.name.trim().charAt(0).toUpperCase();
-const gameUrl = (g) => `game.html?id=${g.id}`;
+/* ================= NILORIX — shared UI (كل الصفحات) =================
+   الألعاب والأسعار في data.js — الإعدادات (Firebase / المحافظ / الإيميل) في config.js
+   ===================================================================== */
 
 /* ---------- State ---------- */
 let currency = store("nx_currency", "USD");
-let cart     = store("nx_cart2", []);     // [{gid, p, qty}]
+let cart     = store("nx_cart2", []);     // [{gid, p, qty, opt}]
 let recent   = store("nx_recent", []);    // [gameId, ...]
-let sales    = store("nx_sales", {});     // {gameId: count}
+let remoteReviews = [];                   // from database (public)
+let remoteSales   = {};                   // {gameId: completed orders} from database
 
 function fmt(usd) {
   const v = usd * rates[currency];
   return symbols[currency] + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-function totalSold(g) { return g.sold + (sales[g.id] || 0); }
+function totalSold(g) { return g.sold + (remoteSales[g.id] || 0); }
 function soldLabel(n) { return n >= 1000 ? (n / 1000).toFixed(1).replace(".0", "") + "k" : n; }
-function recordSale(gid, qty) { sales[gid] = (sales[gid] || 0) + qty; save("nx_sales", sales); }
 
-/* Reviews = اللي في الداتا + اللي اتكتبت من الموقع */
-function reviewsOf(g) { return [...store("nx_reviews_" + g.id, []), ...(g.reviews || [])]; }
+/* Reviews = تقييمات العملاء من قاعدة البيانات + اللي مكتوبة في data.js */
+function reviewsOf(g) {
+  return [...remoteReviews.filter(r => (r.gids || []).includes(g.id)), ...(g.reviews || [])];
+}
 function avgStars(list) { return list.length ? list.reduce((s, r) => s + r.stars, 0) / list.length : 0; }
 /* إحصائيات الاستور كله */
 function storeStats() {
-  const all = games.flatMap(reviewsOf);
+  const all = [...remoteReviews, ...games.flatMap(g => g.reviews || [])];
   return {
     orders: games.reduce((s, x) => s + totalSold(x), 0),
     count: all.length,
@@ -161,12 +41,28 @@ function toast(msg) {
   t.textContent = msg;
   t.classList.add("show");
   clearTimeout(t._h);
-  t._h = setTimeout(() => t.classList.remove("show"), 2200);
+  t._h = setTimeout(() => t.classList.remove("show"), 2600);
+}
+/* صورة اللعبة — ولو الصورة مش موجودة يرجع لأول حرف تلقائياً */
+function gameImg(g, phClass = "") {
+  return g.img
+    ? `<img src="${g.img}" alt="${esc(g.name)}" data-l="${letter(g)}" data-ph="${phClass}" onerror="nxImgFail(this)">`
+    : `<span class="${phClass}">${letter(g)}</span>`;
+}
+function nxImgFail(el) {
+  const s = document.createElement("span");
+  if (el.dataset.ph) s.className = el.dataset.ph;
+  s.textContent = el.dataset.l;
+  el.replaceWith(s);
 }
 function tile(g, cls = "mini-tile") {
-  return `<span class="${cls}" style="--g:${g.g}">${g.img ? `<img src="${g.img}" alt="">` : letter(g)}</span>`;
+  return `<span class="${cls}" style="--g:${g.g}">${gameImg(g)}</span>`;
 }
 const arrowSvg = `<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>`;
+function statusPill(s) {
+  const st = ORDER_STATUS[s] || { label: s, cls: "" };
+  return `<span class="status ${st.cls}">${st.label}</span>`;
+}
 
 /* ---------- Dropdown menus + footer links ---------- */
 function renderMenus() {
@@ -178,7 +74,6 @@ function renderMenus() {
         <a class="dd-item" href="${gameUrl(g)}">
           ${tile(g)}
           <span><strong>${g.name}</strong><small>From ${fmt(minPrice(g))}</small></span>
-          <span class="arrow">${arrowSvg}</span>
         </a>`).join("");
 
     const footer = $(`#footer${type === "currency" ? "Currency" : "Topup"}`);
@@ -189,9 +84,9 @@ function renderMenus() {
 /* ---------- Cart ---------- */
 function saveCart() { save("nx_cart2", cart); renderCart(); }
 
-function addToCart(gid, p, qty = 1) {
-  const item = cart.find(i => i.gid === gid && i.p === p);
-  item ? item.qty += qty : cart.push({ gid, p, qty });
+function addToCart(gid, p, qty = 1, opt = null) {
+  const item = cart.find(i => i.gid === gid && i.p === p && (i.opt ?? null) === opt);
+  item ? item.qty += qty : cart.push({ gid, p, qty, opt });
   saveCart();
   toast(`✅ ${qty > 1 ? qty + " × " : ""}${pkgLabel(byId(gid), byId(gid).packages[p])} added to cart`);
 }
@@ -209,14 +104,14 @@ function renderCart() {
   }
   let total = 0;
   $("#cartItems").innerHTML = cart.map((i, idx) => {
-    const g = byId(i.gid), pk = g.packages[i.p], label = pkgLabel(g, pk), price = pk.price;
+    const g = byId(i.gid), pk = g.packages[i.p], label = pkgLabel(g, pk), price = pk.price, op = optLabel(g, i.opt);
     total += price * i.qty;
     return `
       <div class="cart-item">
         ${tile(g)}
         <div class="cart-info">
           <strong>${label}</strong>
-          <span class="game-meta">${g.name} · ${fmt(price)}</span>
+          <span class="game-meta">${g.name}${op ? " · " + op : ""} · ${fmt(price)}</span>
           <div class="qty">
             <button data-act="dec" data-idx="${idx}">−</button>
             <span>${i.qty}</span>
@@ -245,14 +140,14 @@ $("#cartBtn").addEventListener("click", openCart);
 $("#closeCart").addEventListener("click", closeCart);
 $("#overlay").addEventListener("click", closeCart);
 
+/* ---------- go to checkout (Pay / cart Checkout) ---------- */
+function goCheckout(items, fromCart = false) {
+  try { sessionStorage.setItem("nx_checkout", JSON.stringify({ items, fromCart })); } catch {}
+  location.href = "checkout.html";
+}
 $("#checkoutBtn").addEventListener("click", () => {
   if (!cart.length) return toast("Your cart is empty");
-  // هنا تربط بوابة الدفع الخاصة بك لاحقاً — بعد ما الدفع ينجح ننفّذ الكود ده
-  const orders = cart.map(i => { const pk = byId(i.gid).packages[i.p]; return { gid: i.gid, item: pkgLabel(byId(i.gid), pk), qty: i.qty, total: pk.price * i.qty }; });
-  placeOrders(orders);
-  cart = [];
-  saveCart();
-  closeCart();
+  goCheckout(cart.map(i => ({ gid: i.gid, p: i.p, qty: i.qty, opt: i.opt ?? null })), true);
 });
 
 /* ---------- Search ---------- */
@@ -313,8 +208,99 @@ $("#menuBtn").addEventListener("click", () => $("#nav").classList.toggle("open")
 $("#year").textContent = new Date().getFullYear();
 
 /* =========================================================
-   Orders + review after each order
-   كل أوردر بيطلب من العميل يقيّم، والتقييم بيظهر تحت Reviews
+   🔐 Sign in / Create account (modal)
+   ========================================================= */
+const loginModal = document.createElement("div");
+loginModal.className = "modal";
+loginModal.id = "loginModal";
+loginModal.innerHTML = `
+  <div class="modal-box login-box" role="dialog" aria-modal="true">
+    <button class="icon-btn modal-close" id="lgClose" aria-label="Close">✕</button>
+    <img src="images/logo.png" alt="" class="lg-logo">
+    <h3 id="lgTitle">Sign in</h3>
+    <p class="lg-sub" id="lgSub">Sign in to place orders and chat with us.</p>
+    <div class="lg-tabs">
+      <button type="button" class="lg-tab" data-mode="in">Sign in</button>
+      <button type="button" class="lg-tab" data-mode="up">Create account</button>
+    </div>
+    <form id="lgForm">
+      <label id="lgNameRow">Name<input type="text" id="lgName" maxlength="30" placeholder="Your name"></label>
+      <label>Email<input type="email" id="lgEmail" maxlength="80" placeholder="you@example.com" required></label>
+      <label id="lgPassRow">Password<input type="password" id="lgPass" minlength="6" placeholder="At least 6 characters"></label>
+      <p class="lg-err" id="lgErr" hidden></p>
+      <button class="btn btn-primary btn-block" type="submit" id="lgSubmit">Sign in</button>
+      <button class="link-btn lg-forgot" type="button" id="lgForgot">Forgot password?</button>
+    </form>
+    <div class="lg-or"><span>or</span></div>
+    <button class="btn btn-ghost btn-block lg-google" type="button" id="lgGoogle">
+      <svg viewBox="0 0 48 48" style="stroke:none"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+      Continue with Google
+    </button>
+  </div>`;
+document.body.appendChild(loginModal);
+
+let lgMode = "in";
+let loginWaiters = [];
+function setLoginMode(m) {
+  lgMode = m;
+  $$(".lg-tab").forEach(t => t.classList.toggle("active", t.dataset.mode === m));
+  $("#lgTitle").textContent = m === "up" ? "Create account" : m === "reset" ? "Reset password" : "Sign in";
+  $("#lgNameRow").hidden = m !== "up";
+  $("#lgPassRow").hidden = m === "reset";
+  $("#lgPass").required = m !== "reset";
+  $("#lgSubmit").textContent = m === "up" ? "Create account" : m === "reset" ? "Send reset link" : "Sign in";
+  $("#lgForgot").textContent = m === "reset" ? "Back to sign in" : "Forgot password?";
+  $("#lgForgot").hidden = m === "up";
+  $("#lgErr").hidden = true;
+}
+function openLogin(mode = "in", sub) {
+  if (!NX.enabled) return toast("Store setup isn't finished yet (config.js).");
+  setLoginMode(mode);
+  $("#lgSub").textContent = sub || "Sign in to place orders and chat with us.";
+  loginModal.classList.add("show");
+  document.body.classList.add("lock");
+  setTimeout(() => $(mode === "up" ? "#lgName" : "#lgEmail").focus(), 50);
+}
+function closeLogin() { loginModal.classList.remove("show"); document.body.classList.remove("lock"); }
+/* resolves when the user is signed in (opens the modal if needed) */
+function requireLogin(sub) {
+  return new Promise(resolve => {
+    if (NX.user) return resolve(NX.user);
+    loginWaiters.push(resolve);
+    openLogin("in", sub);
+  });
+}
+function lgError(e) { $("#lgErr").textContent = typeof e === "string" ? e : NX.errText(e); $("#lgErr").hidden = false; }
+
+$$(".lg-tab").forEach(t => t.addEventListener("click", () => setLoginMode(t.dataset.mode)));
+$("#lgForgot").addEventListener("click", () => setLoginMode(lgMode === "reset" ? "in" : "reset"));
+$("#lgClose").addEventListener("click", closeLogin);
+loginModal.addEventListener("click", e => { if (e.target === loginModal) closeLogin(); });
+$("#lgForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = $("#lgEmail").value.trim(), pass = $("#lgPass").value, name = $("#lgName").value.trim();
+  const btn = $("#lgSubmit"); btn.disabled = true;
+  try {
+    if (lgMode === "up") {
+      if (!name) { lgError("Please enter your name."); return; }
+      await NX.signUp(name, email, pass);
+    } else if (lgMode === "reset") {
+      await NX.resetPassword(email);
+      toast("📧 Reset link sent — check your email");
+      setLoginMode("in");
+      return;
+    } else {
+      await NX.signIn(email, pass);
+    }
+  } catch (err) { lgError(err); }
+  finally { btn.disabled = false; }
+});
+$("#lgGoogle").addEventListener("click", async () => {
+  try { await NX.signInGoogle(); } catch (err) { lgError(err); }
+});
+
+/* =========================================================
+   ⭐ Review modal — opens after the buyer confirms "Received"
    ========================================================= */
 const reviewModal = document.createElement("div");
 reviewModal.className = "modal";
@@ -322,14 +308,13 @@ reviewModal.id = "reviewModal";
 reviewModal.innerHTML = `
   <div class="modal-box review-box" role="dialog" aria-modal="true">
     <div class="rm-ok">✓</div>
-    <h3>Order placed!</h3>
+    <h3>Order received!</h3>
     <p class="rm-item" id="rmItem"></p>
     <form id="rmForm">
       <h4>Rate your order</h4>
       <div class="star-pick big" id="rmStars">
         ${[1,2,3,4,5].map(n => `<button type="button" data-s="${n}" aria-label="${n} stars">★</button>`).join("")}
       </div>
-      <input type="text" id="rmName" maxlength="30" placeholder="Your name" required>
       <textarea id="rmText" maxlength="300" rows="3" placeholder="How was your order?" required></textarea>
       <button class="btn btn-primary btn-block" type="submit">Submit review</button>
       <button class="btn btn-ghost btn-block" type="button" id="rmSkip">Skip</button>
@@ -337,132 +322,132 @@ reviewModal.innerHTML = `
   </div>`;
 document.body.appendChild(reviewModal);
 
-let reviewQueue = [];
-let rmStars = 5;
+let rmStars = 5, rmOrder = null;
 const paintRm = () => $$("#rmStars button").forEach(b => b.classList.toggle("on", +b.dataset.s <= rmStars));
-
-function placeOrders(orders) {
-  orders.forEach(o => recordSale(o.gid, o.qty));
-  // save to "My orders" (bell)
-  const now = Date.now();
-  const saved = store("nx_orders", []);
-  orders.forEach((o, k) => saved.unshift({ id: "NX" + (now + k).toString(36).toUpperCase(), ...o, ts: now, seen: false }));
-  save("nx_orders", saved.slice(0, 50));
-  renderBell();
-  reviewQueue = orders.slice();
-  if (window.pageRender) window.pageRender();
-  nextReview();
-}
-function nextReview() {
-  const o = reviewQueue[0];
-  if (!o) { reviewModal.classList.remove("show"); document.body.classList.remove("lock"); return; }
-  $("#rmItem").innerHTML = `${o.qty > 1 ? o.qty + " × " : ""}<strong>${esc(o.item)}</strong> · ${byId(o.gid).name}`;
+function openReview(order) {
+  rmOrder = order;
+  const first = order.items[0];
+  $("#rmItem").innerHTML = `<strong>${esc(first.label)}</strong>${order.items.length > 1 ? ` + ${order.items.length - 1} more` : ""} · ${esc(first.gameName)}`;
   rmStars = 5; paintRm();
   $("#rmText").value = "";
   reviewModal.classList.add("show");
   document.body.classList.add("lock");
 }
+function closeReview() { reviewModal.classList.remove("show"); document.body.classList.remove("lock"); rmOrder = null; }
 $("#rmStars").addEventListener("click", e => {
   const b = e.target.closest("button[data-s]");
   if (b) { rmStars = +b.dataset.s; paintRm(); }
 });
-$("#rmSkip").addEventListener("click", () => { reviewQueue.shift(); nextReview(); });
-$("#rmForm").addEventListener("submit", e => {
+$("#rmSkip").addEventListener("click", closeReview);
+$("#rmForm").addEventListener("submit", async e => {
   e.preventDefault();
-  const o = reviewQueue.shift();
-  const name = $("#rmName").value.trim(), text = $("#rmText").value.trim();
-  if (o && name && text) {
-    const key = "nx_reviews_" + o.gid;
-    save(key, [{ name, stars: rmStars, text, item: o.item, date: new Date().toISOString().slice(0, 10) }, ...store(key, [])]);
+  const text = $("#rmText").value.trim();
+  if (!rmOrder || !text) return;
+  try {
+    await NX.addReview(rmOrder.id, {
+      name: (NX.profile && NX.profile.name) || "Customer",
+      photo: (NX.profile && NX.profile.photo) || "",
+      stars: rmStars, text,
+      item: rmOrder.items.map(i => i.label).join(", "),
+      gids: [...new Set(rmOrder.items.map(i => i.gid))],
+    });
     toast("⭐ Thanks for your review!");
+    remoteReviews = await NX.loadReviews();
     if (window.pageRender) window.pageRender();
-  }
-  nextReview();
+  } catch (err) { console.error(err); toast("Couldn't save your review — try again."); return; }
+  closeReview();
 });
 
 /* =========================================================
-   🔔 Bell — My orders
+   🔔 Bell — My orders (live from database)
    ========================================================= */
-const DELIVERY_MIN = parseInt(DELIVERY_TIME) || 20;
-const bellIcon = (svgPath) => svgPath;
-
-function orderStatus(o) {
-  const left = Math.ceil((o.ts + DELIVERY_MIN * 60000 - Date.now()) / 60000);
-  return left > 0
-    ? { cls: "processing", text: `Arriving in ~${left} min` }
-    : { cls: "delivered", text: "Delivered ✓" };
-}
-function timeAgo(ts) {
-  const m = Math.floor((Date.now() - ts) / 60000);
-  if (m < 1) return "Just now";
-  if (m < 60) return `${m} min ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return new Date(ts).toISOString().slice(0, 10);
-}
+let myOrders = [];
+let stopOrders = null;
+const seenKey = () => "nx_bell_seen_" + (NX.user ? NX.user.uid : "guest");
 
 function renderBell() {
-  const orders = store("nx_orders", []);
-  const unseen = orders.filter(o => !o.seen).length;
+  const lastSeen = store(seenKey(), 0);
+  const unseen = NX.user ? myOrders.filter(o => (o.updatedAt || o.createdAt) > lastSeen).length : 0;
   $("#bellCount").hidden = unseen === 0;
   $("#bellCount").textContent = unseen;
 
+  let body;
+  if (!NX.user) {
+    body = `<div class="pop-empty">🔔<p>Sign in to see your orders</p><button class="btn btn-primary" data-bell="login" style="margin-top:12px;padding:8px 18px;font-size:13px">Sign in</button></div>`;
+  } else if (!myOrders.length) {
+    body = `<div class="pop-empty">🔔<p>No orders yet</p><small>Your orders and their status will show up here.</small></div>`;
+  } else {
+    body = myOrders.slice(0, 15).map(o => {
+      const first = o.items[0], g = byId(first.gid);
+      return `
+        <a class="order-row" href="order.html?id=${o.id}">
+          ${g ? tile(g) : `<span class="mini-tile">#</span>`}
+          <span class="or-info">
+            <strong>${esc(first.label)}${o.items.length > 1 ? ` +${o.items.length - 1}` : ""}</strong>
+            <small>#${shortId(o.id)} · ${timeAgo(o.createdAt)}</small>
+            ${statusPill(o.status)}
+          </span>
+          <span class="or-total">${fmt(o.total)}</span>
+        </a>`;
+    }).join("");
+  }
   $("#bellMenu").innerHTML = `
-    <div class="pop-head"><strong>My orders</strong>${orders.length ? `<small>${orders.length}</small>` : ""}</div>
-    <div class="pop-list">
-      ${orders.length ? orders.map(o => {
-        const g = byId(o.gid), st = orderStatus(o);
-        if (!g) return "";
-        return `
-          <a class="order-row" href="${gameUrl(g)}">
-            ${tile(g)}
-            <span class="or-info">
-              <strong>${o.qty > 1 ? o.qty + " × " : ""}${esc(o.item)}</strong>
-              <small>${g.name} · #${o.id} · ${timeAgo(o.ts)}</small>
-              <span class="status ${st.cls}">${st.text}</span>
-            </span>
-            ${o.total != null ? `<span class="or-total">${fmt(o.total)}</span>` : ""}
-          </a>`;
-      }).join("") : `<div class="pop-empty">🔔<p>No orders yet</p><small>Your orders and their status will show up here.</small></div>`}
-    </div>`;
+    <div class="pop-head"><strong>My orders</strong>${myOrders.length ? `<small>${myOrders.length}</small>` : ""}</div>
+    <div class="pop-list">${body}</div>
+    ${NX.user && myOrders.length ? `<a class="pop-foot" href="orders.html">View all orders →</a>` : ""}`;
 }
-
 function markOrdersSeen() {
-  const orders = store("nx_orders", []);
-  if (orders.some(o => !o.seen)) { save("nx_orders", orders.map(o => ({ ...o, seen: true }))); }
+  if (!NX.user) return;
+  save(seenKey(), Date.now());
   $("#bellCount").hidden = true;
 }
+$("#bellMenu").addEventListener("click", e => {
+  if (e.target.closest('[data-bell="login"]')) { e.stopPropagation(); closePops(); openLogin(); }
+});
 
 /* =========================================================
    👤 Profile circle — photo + account menu
-   (محفوظ على جهاز المستخدم — لتسجيل دخول حقيقي محتاج سيرفر)
    ========================================================= */
-let profile = store("nx_profile", { name: "", email: "", photo: "" });
 const personSvg = `<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>`;
+const prof = () => NX.profile || { name: "", email: "", photo: "" };
 
-function avatarInner() {
-  if (profile.photo) return `<img src="${profile.photo}" alt="">`;
-  if (profile.name) return `<span>${esc(profile.name.charAt(0).toUpperCase())}</span>`;
+function avatarInner(p = prof()) {
+  if (NX.user && p.photo) return `<img src="${p.photo}" alt="">`;
+  if (NX.user && p.name) return `<span>${esc(p.name.charAt(0).toUpperCase())}</span>`;
   return personSvg;
 }
 
 function renderProfile() {
+  const p = prof();
   $("#avatarBtn").innerHTML = avatarInner();
+  if (!NX.user) {
+    $("#profileMenu").innerHTML = `
+      <div class="pm-head">
+        <span class="avatar-btn lg">${personSvg}</span>
+        <div><strong>Guest</strong><small>Sign in to place orders</small></div>
+      </div>
+      <button class="pm-item" data-pm="login"><span>🔐</span>Sign in</button>
+      <button class="pm-item" data-pm="signup"><span>✨</span>Create account</button>
+      <a class="pm-item" href="mailto:support@nilorix.com"><span>🎧</span>Support</a>`;
+    return;
+  }
   $("#profileMenu").innerHTML = `
     <div class="pm-head">
       <span class="avatar-btn lg">${avatarInner()}</span>
       <div>
-        <strong>${profile.name ? esc(profile.name) : "Guest"}</strong>
-        <small>${profile.email ? esc(profile.email) : "Set up your profile"}</small>
+        <strong>${esc(p.name || "My account")}</strong>
+        <small>${esc(p.email || NX.user.email || "")}</small>
       </div>
     </div>
-    <button class="pm-item" data-pm="photo"><span>📷</span>${profile.photo ? "Change photo" : "Upload photo"}</button>
-    <button class="pm-item" data-pm="orders"><span>📦</span>My orders</button>
+    ${NX.isAdmin() ? `<a class="pm-item" href="admin.html"><span>🛠️</span>Admin panel</a>` : ""}
+    <button class="pm-item" data-pm="photo"><span>📷</span>${p.photo ? "Change photo" : "Upload photo"}</button>
+    <a class="pm-item" href="orders.html"><span>📦</span>My orders</a>
     <button class="pm-item" data-pm="settings"><span>⚙️</span>Account settings</button>
-    <a class="pm-item" href="mailto:support@nilorix.com"><span>🎧</span>Support</a>`;
+    <a class="pm-item" href="mailto:support@nilorix.com"><span>🎧</span>Support</a>
+    <button class="pm-item pm-out" data-pm="logout"><span>↪</span>Sign out</button>`;
 }
 
-/* resize uploaded photo to a small square so it fits in storage */
+/* resize uploaded photo to a small square so it fits in the database */
 function readPhoto(file) {
   return new Promise((resolve, reject) => {
     if (!file || !file.type.startsWith("image/")) return reject();
@@ -473,7 +458,7 @@ function readPhoto(file) {
       const m = Math.min(img.width, img.height);
       cv.getContext("2d").drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, S, S);
       URL.revokeObjectURL(img.src);
-      resolve(cv.toDataURL("image/jpeg", 0.85));
+      resolve(cv.toDataURL("image/jpeg", 0.82));
     };
     img.onerror = reject;
     img.src = URL.createObjectURL(file);
@@ -489,7 +474,7 @@ $("#photoInput").addEventListener("change", async e => {
   try {
     const data = await readPhoto(file);
     if (photoTarget === "settings") { draftPhoto = data; paintSettingsPhoto(); }
-    else { profile.photo = data; save("nx_profile", profile); renderProfile(); toast("📷 Photo updated"); }
+    else { await NX.saveProfile({ photo: data }); toast("📷 Photo updated"); }
   } catch { toast("Please choose an image file"); }
 });
 
@@ -510,8 +495,9 @@ settingsModal.innerHTML = `
         </div>
       </div>
       <label>Name<input type="text" id="setName" maxlength="30" placeholder="Your name"></label>
-      <label>Email<input type="email" id="setEmail" maxlength="60" placeholder="you@example.com"></label>
+      <label>Email<input type="email" id="setEmail" disabled></label>
       <button class="btn btn-primary btn-block" type="submit">Save changes</button>
+      <button class="link-btn" type="button" id="setReset" style="justify-self:center">Change password</button>
     </form>
   </div>`;
 document.body.appendChild(settingsModal);
@@ -523,9 +509,10 @@ function paintSettingsPhoto() {
   $("#setRemove").hidden = !draftPhoto;
 }
 function openSettings() {
-  draftPhoto = profile.photo;
-  $("#setName").value = profile.name;
-  $("#setEmail").value = profile.email;
+  const p = prof();
+  draftPhoto = p.photo || "";
+  $("#setName").value = p.name || "";
+  $("#setEmail").value = p.email || (NX.user && NX.user.email) || "";
   paintSettingsPhoto();
   settingsModal.classList.add("show");
   document.body.classList.add("lock");
@@ -535,14 +522,18 @@ $("#setUpload").addEventListener("click", () => { photoTarget = "settings"; $("#
 $("#setRemove").addEventListener("click", () => { draftPhoto = ""; paintSettingsPhoto(); });
 $("#setName").addEventListener("input", paintSettingsPhoto);
 $("#setClose").addEventListener("click", closeSettings);
+$("#setReset").addEventListener("click", async () => {
+  try { await NX.resetPassword(NX.user.email); toast("📧 Password reset link sent to your email"); }
+  catch (err) { toast(NX.errText(err)); }
+});
 settingsModal.addEventListener("click", e => { if (e.target === settingsModal) closeSettings(); });
-$("#setForm").addEventListener("submit", e => {
+$("#setForm").addEventListener("submit", async e => {
   e.preventDefault();
-  profile = { name: $("#setName").value.trim(), email: $("#setEmail").value.trim(), photo: draftPhoto };
-  save("nx_profile", profile);
-  renderProfile();
-  closeSettings();
-  toast("✅ Profile saved");
+  try {
+    await NX.saveProfile({ name: $("#setName").value.trim(), photo: draftPhoto });
+    closeSettings();
+    toast("✅ Profile saved");
+  } catch (err) { toast("Couldn't save — try again."); }
 });
 
 /* ---------- open / close the two header popups ---------- */
@@ -559,20 +550,43 @@ $("#bellBtn").addEventListener("click", e => {
   if (togglePop("#bellWrap")) markOrdersSeen();
 });
 $("#avatarBtn").addEventListener("click", e => { e.stopPropagation(); togglePop("#profileWrap"); });
-$("#profileMenu").addEventListener("click", e => {
+$("#profileMenu").addEventListener("click", async e => {
   const b = e.target.closest("[data-pm]");
   if (!b) return;
   e.stopPropagation();
   closePops();
-  if (b.dataset.pm === "photo")    { photoTarget = "profile"; $("#photoInput").click(); }
-  if (b.dataset.pm === "settings") openSettings();
-  if (b.dataset.pm === "orders")   { renderBell(); togglePop("#bellWrap"); markOrdersSeen(); }
+  const a = b.dataset.pm;
+  if (a === "login")    openLogin("in");
+  if (a === "signup")   openLogin("up");
+  if (a === "photo")    { photoTarget = "profile"; $("#photoInput").click(); }
+  if (a === "settings") openSettings();
+  if (a === "logout")   { await NX.signOut(); toast("Signed out"); }
 });
 document.addEventListener("click", e => { if (!e.target.closest(".hd-pop")) closePops(); });
-document.addEventListener("keydown", e => { if (e.key === "Escape") { closePops(); closeSettings(); } });
+document.addEventListener("keydown", e => { if (e.key === "Escape") { closePops(); closeSettings(); closeLogin(); } });
 
-// update "Arriving in ~X min" while the page is open
-setInterval(() => { if ($("#bellWrap").classList.contains("open")) renderBell(); }, 30000);
+/* =========================================================
+   Start
+   ========================================================= */
+NX.onAuth(user => {
+  if (user) {
+    closeLogin();
+    loginWaiters.splice(0).forEach(fn => fn(user));
+  }
+  if (stopOrders) { stopOrders(); stopOrders = null; }
+  myOrders = [];
+  if (user) stopOrders = NX.watchMyOrders(list => { myOrders = list; renderBell(); });
+  renderProfile();
+  renderBell();
+  if (window.onAuthChange) window.onAuthChange(user);
+});
+
+if (NX.enabled) {
+  Promise.all([NX.loadReviews(), NX.loadSales()]).then(([r, s]) => {
+    remoteReviews = r; remoteSales = s;
+    if (window.pageRender) window.pageRender();
+  });
+}
 
 renderMenus();
 renderCart();

@@ -4,6 +4,7 @@ const params = new URLSearchParams(location.search);
 const game = byId(params.get("id"));
 let selected = 0;   // package index (بيبدأ على Popular لو موجود)
 let qty = 1;
+let opt = null;   // الاختيار (زي Game device)
 const COIN_COLORS = ["#a1a1aa", "#22c55e", "#3b82f6", "#6366f1", "#a855f7", "#eab308", "#f97316", "#ec4899", "#ef4444"];
 
 if (!game) {
@@ -22,6 +23,7 @@ if (!game) {
   if (navDd) navDd.classList.add("active");
 
   selected = Math.max(0, game.packages.findIndex(p => p.badge === "popular"));
+  if (game.options) opt = game.options.default ?? 0;
   setupOrder();
   window.pageRender = renderGame;
   renderGame();
@@ -44,7 +46,7 @@ function renderGame() {
   /* --- Top-left: logo (first letter) + name --- */
   $("#gpHead").innerHTML = `
     <div class="gp-logo" style="--g:${g.g}">
-      ${g.img ? `<img src="${g.img}" alt="${g.name}">` : `<span>${letter(g)}</span>`}
+      ${gameImg(g)}
     </div>
     <div class="gp-title">
       <span class="type-pill">${TYPE_LABEL[g.type]}</span>
@@ -82,13 +84,42 @@ function renderGame() {
 /* ---------- Amount cards (under the game name) ---------- */
 
 function perUnit(p) {
+  if (p.months) return `${fmt(p.price / p.months)} / month`;
   if (!p.amount) return p.sub || "";
   return p.amount >= 1e6
     ? `${fmt(p.price / p.amount * 1e6)} / M`
     : `${fmt(p.price / p.amount * 1000)} / K`;
 }
 
+/* أيقونة العملة: صورة اللعبة لو موجودة (coinImg) — وإلا دايرة ملونة */
+function coinHtml(i) {
+  const icon = game.packages[i] && game.packages[i].icon;
+  if (icon) return `<img class="coin-img" src="${icon}" alt="">`;
+  return game.coinImg
+    ? `<img class="coin-img" src="${game.coinImg}" alt="">`
+    : `<span class="coin" style="--c:${COIN_COLORS[i % COIN_COLORS.length]}">${game.unit.charAt(0)}</span>`;
+}
+
+function renderAmountTop() {
+  let html = "";
+  if (game.notice) html += `
+    <div class="notice">
+      <span class="notice-ic">⚠</span>
+      <div><strong>${game.notice.title}</strong><p>${game.notice.text}</p></div>
+    </div>`;
+  if (game.options) html += `
+    <h3 class="panel-title">${game.options.title}</h3>
+    <div class="opt-row">
+      ${game.options.choices.map((ch, i) => `
+        <button type="button" class="opt ${i === opt ? "selected" : ""}" data-o="${i}">
+          ${i === opt ? '<span class="opt-check">✓</span>' : ""}${esc(ch)}
+        </button>`).join("")}
+    </div>`;
+  $("#amountTop").innerHTML = html;
+}
+
 function renderAmounts() {
+  renderAmountTop();
   $("#amounts").innerHTML = game.packages.map((p, i) => {
     const pct = p.old ? Math.round((1 - p.price / p.old) * 100) : 0;
     const badge = p.badge === "popular" ? `<span class="amt-badge popular">★ Popular</span>`
@@ -97,12 +128,13 @@ function renderAmounts() {
       <button type="button" class="amt ${i === selected ? "selected" : ""}" data-i="${i}">
         ${badge}
         <span class="amt-check">✓</span>
-        <span class="coin" style="--c:${COIN_COLORS[i % COIN_COLORS.length]}">${game.unit.charAt(0)}</span>
-        <span class="amt-num">${p.label || shortNum(p.amount)}</span>
-        <span class="amt-unit">${p.label ? (p.sub || "") : game.unit}</span>
+        ${coinHtml(i)}
+        ${p.label
+          ? `<span class="amt-num long">${esc(p.label)}</span>`
+          : `<span class="amt-num">${shortNum(p.amount)}</span><span class="amt-unit">${game.unit}</span>`}
         <span class="amt-price"><strong>${fmt(p.price)}</strong>${pct > 0 ? `<span class="disc">-${pct}%</span>` : ""}</span>
         <span class="amt-old">${p.old ? `<s>${fmt(p.old)}</s> <i title="Original price">ⓘ</i>` : "&nbsp;"}</span>
-        <span class="amt-per">${p.amount ? perUnit(p) : "&nbsp;"}</span>
+        <span class="amt-per">${perUnit(p) || "&nbsp;"}</span>
       </button>`;
   }).join("");
   updateTotal();
@@ -112,8 +144,8 @@ function renderAmounts() {
 function updateTotal() {
   const p = game.packages[selected];
   $("#selItem").innerHTML = `
-    <span class="coin" style="--c:${COIN_COLORS[selected % COIN_COLORS.length]}">${game.unit.charAt(0)}</span>
-    <span class="sel-info"><strong>${pkgLabel(game, p)}</strong><small>${game.name}</small></span>
+    ${coinHtml(selected)}
+    <span class="sel-info"><strong>${pkgLabel(game, p)}</strong><small>${game.name}${optLabel(game, opt) ? " · " + optLabel(game, opt) : ""}</small></span>
     <span class="sel-price">${fmt(p.price)}</span>`;
   $("#deliveryTime").textContent = DELIVERY_TIME;
   $("#qInput").value = qty;
@@ -121,6 +153,12 @@ function updateTotal() {
 }
 
 function setupOrder() {
+  $("#amountTop").addEventListener("click", e => {
+    const b = e.target.closest(".opt");
+    if (!b) return;
+    opt = +b.dataset.o;
+    renderAmounts();
+  });
   $("#amounts").addEventListener("click", e => {
     const b = e.target.closest(".amt");
     if (!b) return;
@@ -134,11 +172,10 @@ function setupOrder() {
     updateTotal();
   });
 
-  $("#addCartBtn").addEventListener("click", () => addToCart(game.id, selected, qty));
+  $("#addCartBtn").addEventListener("click", () => addToCart(game.id, selected, qty, opt));
 
   $("#payBtn").addEventListener("click", () => {
-    // هنا تربط بوابة الدفع الخاصة بك لاحقاً — بعد ما الدفع ينجح:
-    placeOrders([{ gid: game.id, item: pkgLabel(game, game.packages[selected]), qty, total: game.packages[selected].price * qty }]);
+    goCheckout([{ gid: game.id, p: selected, qty, opt }]);
   });
 }
 
@@ -155,8 +192,8 @@ function renderReviews() {
     ? revs.map(r => `
         <div class="review">
           <div class="review-top">
-            <span class="avatar">${esc(r.name.charAt(0).toUpperCase())}</span>
-            <div><strong>${esc(r.name)}</strong><small>${esc(r.date || "")}</small></div>
+            <span class="avatar">${r.photo ? `<img src="${esc(r.photo)}" alt="">` : esc((r.name || "?").charAt(0).toUpperCase())}</span>
+            <div><strong>${esc(r.name)}</strong><small>${esc(r.date || (r.createdAt ? new Date(r.createdAt).toISOString().slice(0, 10) : ""))}</small></div>
             ${starsHtml(r.stars)}
           </div>
           ${r.item ? `<span class="rev-item">✔ Purchased: ${esc(r.item)}</span>` : ""}
