@@ -15,20 +15,3 @@ main{max-width:1530px;margin:0 auto;padding:20px clamp(18px,2.8vw,44px) 35px}.he
 img{max-width:100%;height:auto}
 @media(max-width:1000px){.topbar{flex-wrap:wrap}.hero-mark{width:220px!important;height:220px!important}.hero-mark img{width:110px!important;height:110px!important;max-width:110px!important;max-height:110px!important}}
 @media(max-width:760px){.topbar{flex-wrap:wrap}.hero-mark{width:190px!important;height:190px!important;max-width:60vw}.hero-mark img{width:90px!important;height:90px!important;max-width:90px!important;max-height:90px!important}.brand img{width:34px!important;height:34px!important;max-width:34px!important;max-height:34px!important;flex-basis:34px}}
-
-/* Home directory layout inspired by the supplied reference */
-.home-directory{display:grid;grid-template-columns:minmax(0,2fr) minmax(240px,1fr);gap:16px;max-width:1120px;margin:0 auto;padding:10px 0 30px;align-items:stretch}
-.directory-card{background:#1d1e27;border:1px solid #292a35;border-radius:7px;padding:18px 16px;min-width:0;min-height:125px}
-.directory-card h2{font-size:14px;margin:0 0 18px;color:#fff;font-weight:750}
-.directory-list{display:grid;gap:11px;align-content:start}
-.directory-list.two-col{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}
-.directory-item{display:flex;align-items:center;gap:9px;min-width:0;color:#f6f6fb;font-size:12px;font-weight:600;text-decoration:none;border-radius:5px;padding:2px 0;transition:color .15s,transform .15s}
-.directory-item:hover{color:#ffc43b;transform:translateX(2px)}
-.directory-icon{width:20px;height:20px;flex:0 0 20px;border-radius:5px;display:grid;place-items:center;background:linear-gradient(135deg,#ffc43b,#ff851b);color:#10111a;font-size:12px;font-weight:900}
-.directory-icon.r{background:#ffca48;color:#171820;font-size:14px}
-.directory-arrow{margin-left:auto;color:#858796;opacity:0;font-size:11px}
-.directory-item:hover .directory-arrow{opacity:1}
-.directory-empty{font-size:12px;color:#a9aab7;padding:4px 0}
-.topbar{background:#111117}
-body{background:#0d0d10}
-@media(max-width:700px){.home-directory{grid-template-columns:1fr;gap:12px;padding-top:8px}.directory-card{min-height:auto;padding:16px}.directory-list.two-col{column-gap:12px}.directory-item{font-size:12px}}
