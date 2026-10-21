@@ -216,7 +216,7 @@ loginModal.id = "loginModal";
 loginModal.innerHTML = `
   <div class="modal-box login-box" role="dialog" aria-modal="true">
     <button class="icon-btn modal-close" id="lgClose" aria-label="Close">✕</button>
-    <img src="images/logo.png" alt="" class="lg-logo">
+    <img src="${typeof LOGO_SRC !== 'undefined' ? LOGO_SRC : 'images/logo.png'}" alt="" class="lg-logo">
     <h3 id="lgTitle">Sign in</h3>
     <p class="lg-sub" id="lgSub">Sign in to place orders and chat with us.</p>
     <div class="lg-tabs">

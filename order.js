@@ -171,7 +171,7 @@ function renderChat() {
     const mine = meIsAdmin ? c.from === "admin" : c.from === "buyer";
     return `
       <div class="msg ${mine ? "mine" : "theirs"}">
-        ${c.from === "admin" && !mine ? `<img src="images/logo.png" alt="" class="msg-av">` : ""}
+        ${c.from === "admin" && !mine ? `<img src="${typeof LOGO_SRC !== 'undefined' ? LOGO_SRC : 'images/logo.png'}" alt="" class="msg-av">` : ""}
         <div class="bubble"><p>${esc(c.text)}</p><small>${c.from === "admin" ? "Nilorix · " : ""}${timeAgo(c.createdAt)}</small></div>
       </div>`;
   }).join("") : `<p class="chat-empty">Need help with this order? Send us a message — we usually reply within minutes.</p>`;

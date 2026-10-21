@@ -187,7 +187,7 @@ const DISPUTE_REASONS = ["I didn't receive anything", "I received the wrong amou
 const AUTO_COMPLETE_DAYS = 3;   // بعد التسليم بكام يوم الأوردر يتقفل لوحده لو العميل مأكدش
 
 const TYPE_LABEL = { currency: "Currency", topup: "Top Up" };
-const SELLER = { name: "Nilorix", logo: "images/logo.png" };
+const SELLER = { name: "Nilorix", logo: (typeof LOGO_SRC !== "undefined" ? LOGO_SRC : "images/logo.png") };
 const DELIVERY_TIME = "20 minutes";   // وقت وصول الأوردر — عدّله من هنا
 
 /* ---------- Currency conversion ---------- */
