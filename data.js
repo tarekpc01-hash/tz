@@ -196,6 +196,10 @@ const $$ = (s) => document.querySelectorAll(s);
 function store(k, fallback) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; } catch { return fallback; } }
 function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+/* صورة مدمجة من assets.js لو موجودة — وإلا مسار الصورة العادي (الموقع مبيقعش لو الملف ناقص) */
+function asset(p) {
+  try { return (p && typeof ASSETS !== "undefined" && ASSETS && ASSETS[p]) || p; } catch (e) { return p; }
+}
 const byId = (id) => games.find(g => g.id === id);
 /* كمية حرّة (Robux): السعر = الكمية × perUnit، متقرّب لأقرب سنت */
 const customPrice = (g, amt) => Math.round(amt * g.custom.perUnit * 100) / 100;
