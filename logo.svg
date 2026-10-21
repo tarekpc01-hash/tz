@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="a" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffb300"/>
+      <stop offset="0.5" stop-color="#ff6a00"/>
+      <stop offset="1" stop-color="#ff3d6e"/>
+    </linearGradient>
+    <linearGradient id="b" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff3d6e"/>
+      <stop offset="0.5" stop-color="#a020f0"/>
+      <stop offset="1" stop-color="#5b2cff"/>
+    </linearGradient>
+  </defs>
+  <!-- left leg -->
+  <polygon points="30,20 72,20 72,180 30,180 30,20" fill="url(#a)"/>
+  <!-- diagonal -->
+  <polygon points="30,20 78,20 170,180 122,180" fill="url(#a)" opacity="0.95"/>
+  <!-- right leg -->
+  <polygon points="128,20 170,20 170,180 128,180" fill="url(#b)"/>
+  <!-- shine -->
+  <polygon points="30,20 72,20 60,40 30,40" fill="#fff" opacity="0.25"/>
+</svg>

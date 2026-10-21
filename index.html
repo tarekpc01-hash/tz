@@ -1,44 +1,175 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#030914"><meta name="description" content="Nilorix — digital gaming currency and top-ups."><title>Nilorix — Gaming Beyond Limits</title><link rel="icon" href="favicon.svg"><link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NILORIX — Gaming Beyond Limits</title>
+  <meta name="description" content="NILORIX — Your ultimate destination for gaming & digital products.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="images/logo.svg" type="image/svg+xml">
 </head>
 <body>
-<header class="topbar">
-  <a class="brand" href="#"><img src="nilorix-logo.png" alt="Nilorix"><span>NILORIX</span></a>
-  <nav class="main-nav">
-    <div class="navdrop"><button class="nav-trigger" aria-expanded="false">Currency <span>⌄</span></button><div class="dropdown"><strong>Currency</strong><a href="#product/ps99">Pet Simulator 99</a><a href="#product/bladeball">Blade Ball Tokens</a><a href="#product/robux">Roblox Robux</a></div></div>
-    <div class="navdrop"><button class="nav-trigger" aria-expanded="false">Top up <span>⌄</span></button><div class="dropdown"><strong>Top up</strong><a href="#product/fortnite">Fortnite</a><a href="#product/apex">Apex Legends</a><a href="#product/ea">EA Sports Points</a><a href="#product/pokemon">Pokémon GO Top Up</a><a href="#product/genshin">Genshin Impact Top Up</a></div></div>
-  </nav>
-  <label class="searchbox"><span>⌕</span><input id="search" placeholder="Search for games, currency, or top up…" aria-label="Search products"></label>
-  <button class="currency-btn" aria-label="Currency">◎ <span>USD</span>⌄</button>
-  <button id="cartOpen" class="icon-btn cart-icon" aria-label="Cart">🛒<b id="count">0</b></button>
-  <button id="bell" class="icon-btn bell-icon" aria-label="Notifications">🔔<b class="bell-dot" id="bellDot"></b></button>
-  <button id="profile" class="profile-btn" aria-label="Account"><span class="avatar">👤</span><span class="profile-chevron">⌄</span></button>
-</header>
-<main id="main">
-  <section id="homeView">
-    <section class="hero">
-      <div class="hero-copy"><div class="eyebrow">GAMING BEYOND LIMITS</div><h1>NILORIX</h1><p class="hero-sub">YOUR ULTIMATE DESTINATION<br>FOR GAMING &amp; DIGITAL PRODUCTS</p><a class="primary-btn" href="#catalog">Shop Now <span>→</span></a><div class="hero-benefits"><div><b>ϟ</b><span><strong>Instant Delivery</strong><small>Digital goods, made simple</small></span></div><div><b>⬟</b><span><strong>Secure Payments</strong><small>Crypto checkout planned</small></span></div><div><b>☏</b><span><strong>Customer Support</strong><small>We're here to help</small></span></div></div></div>
-      <div class="hero-mark"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><img src="nilorix-logo.png" alt="Nilorix emblem"></div>
-    </section>
-    <section class="catalog" id="catalog">
-      <div class="section-title"><div><span class="section-icon">✦</span><h2>Currency</h2></div><span class="section-note">Explore digital currency</span></div>
-      <div class="product-grid compact" id="currencyGrid"></div>
-      <div class="section-title topup-title"><div><span class="section-icon">⚡</span><h2>Top up</h2></div><span class="section-note">Game top-ups</span></div>
-      <div class="product-grid compact" id="topupGrid"></div>
-      <div class="section-title recent-title"><div><span class="section-icon">◷</span><h2>Recently Visited</h2></div></div>
-      <div class="product-grid compact" id="recentGrid"><div class="empty-mini">Your recently visited products will appear here.</div></div>
-      <div class="popular-wrap"><div class="section-title"><div><span class="section-icon">✦</span><h2>Popular Currency</h2></div></div><div class="product-grid compact" id="popularCurrency"></div><div class="section-title topup-title"><div><span class="section-icon">✦</span><h2>Popular Top up</h2></div></div><div class="product-grid compact" id="popularTopup"></div></div>
-    </section>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="container header-inner">
+      <a href="#" class="logo">
+        <img src="images/logo.svg" alt="NILORIX logo">
+        <span>NILORIX</span>
+      </a>
+
+      <nav class="nav" id="nav">
+        <a href="#" class="active">Home</a>
+        <a href="#games">Games</a>
+        <a href="#products" data-filter-link="giftcards">Gift Cards</a>
+        <a href="#products" data-filter-link="coins">Gaming Coins</a>
+        <a href="#products" data-filter-link="software">Software</a>
+        <a href="#support">Support</a>
+      </nav>
+
+      <div class="header-tools">
+        <div class="search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input type="text" id="searchInput" placeholder="Search for games, gift cards and more...">
+        </div>
+        <select id="currency" class="currency">
+          <option value="USD">USD</option>
+          <option value="EGP">EGP</option>
+          <option value="EUR">EUR</option>
+        </select>
+        <button class="icon-btn" aria-label="Account">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+        </button>
+        <button class="icon-btn cart-btn" id="cartBtn" aria-label="Cart">
+          <svg viewBox="0 0 24 24"><path d="M3 4h2l2.5 11h11L21 7H6.5"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>
+          <span class="cart-count" id="cartCount">0</span>
+        </button>
+        <button class="icon-btn menu-btn" id="menuBtn" aria-label="Menu">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero">
+    <div class="container hero-inner">
+      <div class="hero-text">
+        <p class="tagline">GAMING BEYOND LIMITS</p>
+        <h1 class="hero-title">NILORIX</h1>
+        <p class="hero-sub">YOUR ULTIMATE DESTINATION<br><span>FOR GAMING &amp; DIGITAL PRODUCTS</span></p>
+        <a href="#products" class="btn btn-primary">Shop Now <span>→</span></a>
+
+        <div class="features">
+          <div class="feature">
+            <div class="feature-icon">⚡</div>
+            <div><strong>Instant Delivery</strong><small>Get your products in minutes</small></div>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">🛡️</div>
+            <div><strong>Secure Payments</strong><small>Safe &amp; encrypted payments</small></div>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">🎧</div>
+            <div><strong>24/7 Support</strong><small>We're here to help you</small></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <!-- ضع صور الهيرو الخاصة بك هنا داخل مجلد images (مثلاً hero-left.png و hero-right.png) -->
+        <div class="hero-card hero-card-left" style="background-image:url('images/hero-left.png')">
+          <span>FORTNITE</span>
+        </div>
+        <div class="hero-logo-wrap">
+          <img src="images/logo.svg" alt="" class="hero-logo">
+        </div>
+        <div class="hero-card hero-card-right" style="background-image:url('images/hero-right.png')">
+          <span>ROBLOX</span>
+        </div>
+        <div class="hero-card hero-card-bottom" style="background-image:url('images/hero-bottom.png')">
+          <span>CALL OF DUTY</span>
+        </div>
+      </div>
+    </div>
   </section>
-  <section id="productView" hidden></section>
-  <section id="infoView" hidden></section>
-</main>
-<footer class="footer"><a class="brand footer-brand" href="#"><img src="nilorix-logo.png" alt=""><span>NILORIX</span></a><span class="tagline">Gaming Beyond Limits</span><nav><a href="#info/how">How it works</a><a href="#info/support">Support</a><a href="#info/about">About</a></nav><small>© <span id="year"></span> Nilorix. Demo storefront.</small></footer>
-<button class="support-fab" id="supportFab" aria-label="Contact customer support"><span>◉</span><small>Support</small></button>
-<div id="toast" role="status"></div>
-<div id="shade"></div><aside id="drawer" aria-label="Shopping cart"><div class="drawhead"><div><small>YOUR SELECTION</small><h2>Your cart <span id="drawerCount">(0)</span></h2></div><button id="close" aria-label="Close cart">×</button></div><div id="cartItems"></div><div class="drawfoot"><div class="subtotal">Subtotal <b id="total">$0.00</b></div><p>Crypto checkout is a design preview. No payment will be processed.</p><button id="checkout" class="primary-btn full">Continue to checkout →</button><button id="continue" class="secondary-btn">Continue shopping</button></div></aside>
-<div class="popover-panel" id="notifications"><strong>Notifications</strong><p>You’ll see order updates here after an order system is connected.</p></div><div class="popover-panel" id="accountMenu"><strong>Your account</strong><button id="signIn">Sign in / Create account</button><a href="#info/support">Support</a></div>
-<script src="app.js"></script>
-</body></html>
+
+  <!-- ===== POPULAR GAMES ===== -->
+  <section class="section" id="games">
+    <div class="container">
+      <div class="section-head">
+        <h2>🎮 Popular Games</h2>
+        <a href="#" class="view-all">View All →</a>
+      </div>
+      <div class="games-row" id="gamesRow"></div>
+    </div>
+  </section>
+
+  <!-- ===== FEATURED PRODUCTS ===== -->
+  <section class="section" id="products">
+    <div class="container">
+      <div class="section-head">
+        <h2>🔥 Featured Products</h2>
+        <div class="filters" id="filters">
+          <button class="filter active" data-filter="all">All</button>
+          <button class="filter" data-filter="fortnite">Fortnite</button>
+          <button class="filter" data-filter="roblox">Roblox</button>
+          <button class="filter" data-filter="giftcards">Gift Cards</button>
+          <button class="filter" data-filter="coins">Gaming Coins</button>
+          <button class="filter" data-filter="software">Software</button>
+        </div>
+      </div>
+      <div class="products-grid" id="productsGrid"></div>
+      <p class="empty" id="emptyMsg" hidden>No products found.</p>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer" id="support">
+    <div class="container footer-inner">
+      <div>
+        <a href="#" class="logo"><img src="images/logo.svg" alt=""><span>NILORIX</span></a>
+        <p class="muted">Your ultimate destination for gaming &amp; digital products.</p>
+      </div>
+      <div>
+        <h4>Shop</h4>
+        <a href="#products">Gift Cards</a>
+        <a href="#products">Gaming Coins</a>
+        <a href="#products">Software</a>
+      </div>
+      <div>
+        <h4>Support</h4>
+        <a href="#">Help Center</a>
+        <a href="#">Contact Us</a>
+        <a href="#">Refund Policy</a>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <a href="mailto:support@nilorix.com">support@nilorix.com</a>
+        <p class="muted">24/7 Live Support</p>
+      </div>
+    </div>
+    <p class="copy">© <span id="year"></span> NILORIX. All rights reserved.</p>
+  </footer>
+
+  <!-- ===== CART DRAWER ===== -->
+  <div class="overlay" id="overlay"></div>
+  <aside class="cart" id="cart">
+    <div class="cart-head">
+      <h3>Your Cart</h3>
+      <button class="icon-btn" id="closeCart" aria-label="Close">✕</button>
+    </div>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="cart-foot">
+      <div class="cart-total"><span>Total</span><strong id="cartTotal">$0.00</strong></div>
+      <button class="btn btn-primary btn-block" id="checkoutBtn">Checkout</button>
+    </div>
+  </aside>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
