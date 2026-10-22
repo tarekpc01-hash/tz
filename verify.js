@@ -219,7 +219,7 @@ function makeRpc(env) {
 
 /* ---------- Firestore REST with the service account ---------- */
 let tokenCache = null;
-async function firestore(env) {
+export async function firestore(env) {
   const sa = typeof env.FIREBASE_SA === "string" ? JSON.parse(env.FIREBASE_SA) : env.FIREBASE_SA;
   const project = sa.project_id || NX_CONFIG.FIREBASE_CONFIG.projectId;
   const base = `https://firestore.googleapis.com/v1/projects/${project}/databases/(default)/documents`;

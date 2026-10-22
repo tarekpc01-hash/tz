@@ -113,6 +113,11 @@ FormSubmit مجاني ومش محتاج حساب.
 لو الخطوات دي متعملتش، الموقع بيشتغل عادي زي الأول (العميل يحط الـ TX وانت تأكد بإيدك).
 
 ## 💳 الدفع بالفيزا / Apple Pay / Google Pay (Transak)
-- سجّل حساب Partner في https://transak.com وخد الـ **API Key**.
-- حطه في `config.js` في `CARD_PAY.transakApiKey` — زرار **Pay with Card** هيظهر لوحده.
-- العميل بيدفع رسوم Transak (حوالي 3–5%) وبيعمل توثيق مرة واحدة، والـ USDT بيوصل محفظتك BEP20.
+- العميل بيشتري USDT بالكارت عن طريق Transak (هو اللي بيدفع رسومهم ~3–5%) والـ USDT بيوصل محفظتك BEP20 على طول، والأوردر بيتأكد لوحده.
+- الكود في `functions/api/card.js` — بيعمل لينك الدفع الآمن من السيرفر (Transak بقى يطلب كده).
+- الإعداد: Cloudflare ← المشروع ← Settings ← Variables and Secrets:
+  - `TRANSAK_API_KEY` = الـ API Key (من Transak ← Developers)
+  - `TRANSAK_API_SECRET` = الـ API Secret — **Type: Secret**
+  - `TRANSAK_ENV` = `staging` للتجربة، وبعد موافقة الـ KYB غيّرها لـ `production` وحط مفاتيح الـ Production.
+- زرار **Pay with Card** بيظهر لوحده أول ما المفاتيح تتحط (ومكتوب جنبه TEST في وضع التجربة).
+- أقل أوردر يظهر فيه الزرار: `CARD_PAY.minUsd` في `config.js`.

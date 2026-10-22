@@ -94,7 +94,7 @@ function renderPayBox() {
   box.dataset.for = o.id;
   const auto = o.payMethod === "usdt_bep20";
   const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const card = auto && typeof CARD_PAY !== "undefined" && CARD_PAY.transakApiKey && !CARD_PAY.transakApiKey.startsWith("PUT_");
+  const card = auto && cardInfo.enabled && Number(o.total) >= ((typeof CARD_PAY !== "undefined" && CARD_PAY.minUsd) || 0);
   box.innerHTML = `
     <h3 class="panel-title">💳 Complete your payment</h3>
     <div class="pay-amount">
@@ -110,7 +110,7 @@ function renderPayBox() {
       ${window.ethereum ? `<button class="btn btn-wallet" id="walletBtn"><span class="wl-ic">🦊</span> Pay with wallet <small>MetaMask · Trust Wallet</small></button>`
         : mobile ? `<a class="btn btn-wallet" href="https://metamask.app.link/dapp/${location.host}${location.pathname}${location.search}"><span class="wl-ic">🦊</span> Pay in MetaMask</a>
                     <a class="btn btn-wallet" href="https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodeURIComponent(location.href)}"><span class="wl-ic">🛡</span> Pay in Trust Wallet</a>` : ""}
-      ${card ? `<button class="btn btn-card" id="cardBtn"><span class="wl-ic">💳</span> Pay with Card <small>Visa · Apple Pay · Google Pay</small></button>` : ""}
+      ${card ? `<button class="btn btn-card" id="cardBtn"><span class="wl-ic">💳</span> Pay with Card${cardInfo.test ? ` <em class="test-tag">TEST</em>` : ""} <small>Visa · Apple Pay · Google Pay</small></button>` : ""}
     </div>
     ${card ? `<p class="pay-note">Card payments are handled by Transak: you buy USDT with your card and it's sent straight to us. Transak charges its own fee (about 3–5%) and asks for a one-time ID check.</p>` : ""}` : ""}
 
@@ -226,14 +226,29 @@ async function payWithWallet(btn) {
   } finally { btn.disabled = false; }
 }
 
-function openCardPay() {
-  const p = new URLSearchParams({
-    apiKey: CARD_PAY.transakApiKey, productsAvailed: "BUY", cryptoCurrencyCode: "USDT", network: "bsc",
-    walletAddress: order.payAddress, disableWalletAddressForm: "true", cryptoAmount: String(order.cryptoAmount),
-    fiatCurrency: "USD", partnerOrderId: order.id, hideMenu: "true", redirectURL: location.href.split("#")[0],
-  });
-  window.open("https://global.transak.com/?" + p.toString(), "_blank", "noopener");
-  liveText("Finish the card payment in the Transak window — this page updates by itself when the USDT arrives.", "pl-found");
+/* is card payment set up on the server? */
+let cardInfo = { enabled: false, test: false };
+fetch("/api/card").then(r => r.ok ? r.json() : {}).then(j => {
+  if (!j || !j.enabled) return;
+  cardInfo = { enabled: true, test: !!j.test };
+  const box = $("#payBox"); if (box) box.dataset.for = "";
+  if (order) renderPayBox();
+}).catch(() => {});
+
+async function openCardPay(btn) {
+  const win = window.open("", "_blank");            // open now (popup blockers), fill in when the link is ready
+  if (win) { try { win.document.write("<p style='font-family:sans-serif;padding:24px'>Opening secure card payment…</p>"); } catch {} }
+  btn.disabled = true;
+  try {
+    const r = await fetch("/api/card", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ orderId: order.id }) });
+    const j = await r.json();
+    if (!j.ok || !j.url) throw new Error(j.message || "unavailable");
+    if (win) { win.opener = null; win.location.href = j.url; } else location.href = j.url;
+    liveText("Finish the card payment in the Transak window — this page updates by itself when the USDT arrives.", "pl-found");
+  } catch (e) {
+    if (win) win.close();
+    toast(e.message && e.message.length > 12 ? e.message : "Card payment is unavailable right now — please pay with crypto.");
+  } finally { btn.disabled = false; }
 }
 
 function renderAction() {
@@ -322,7 +337,7 @@ document.addEventListener("click", async e => {
   }
   if (e.target.closest("#reviewBtn")) { openReview(order); return; }
   if (e.target.closest("#walletBtn")) { payWithWallet(e.target.closest("#walletBtn")); return; }
-  if (e.target.closest("#cardBtn")) { openCardPay(); return; }
+  if (e.target.closest("#cardBtn")) { openCardPay(e.target.closest("#cardBtn")); return; }
   if (e.target.closest("#disputeBtn")) { disputeFormOpen = true; renderAction(); $("#disputeText").focus(); return; }
   if (e.target.closest("#disputeCancel")) { disputeFormOpen = false; renderAction(); return; }
   if (e.target.closest("#cancelBtn")) {

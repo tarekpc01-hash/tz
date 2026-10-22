@@ -26,9 +26,10 @@ const WALLETS = {
 
 /* 3b) الدفع بالفيزا / Apple Pay / Google Pay — عن طريق Transak
        العميل بيشتري USDT بالكارت (هو اللي بيدفع رسومهم ~3-5%) والـ USDT بيوصل محفظتك BEP20 على طول.
-       سجّل في https://transak.com (Partner / Business) وحط الـ API Key هنا — الزرار مش هيظهر لحد ما تحطه */
+       المفاتيح بتتحط في Cloudflare (مش هنا): TRANSAK_API_KEY و TRANSAK_API_SECRET و TRANSAK_ENV — الشرح في README.md
+       الزرار بيظهر لوحده أول ما المفاتيح تتحط في Cloudflare.  minUsd: أقل أوردر يظهر فيه الزرار */
 const CARD_PAY = {
-  transakApiKey: "PUT_YOUR_TRANSAK_API_KEY",
+  minUsd: 10,
 };
 
 /* 4) الإيميل اللي توصله إشعارات الأوردرات الجديدة (عن طريق FormSubmit) */
