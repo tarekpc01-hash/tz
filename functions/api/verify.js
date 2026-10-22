@@ -21,7 +21,11 @@ import "../../data.js";
 const USDT_BEP20   = "0x55d398326f99059ff775485246999027b3197955";   // official USDT on BNB Smart Chain (18 decimals)
 const TRANSFER     = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const CONFIRMATIONS = 3;
-const DEFAULT_RPCS = ["https://bsc-rpc.publicnode.com", "https://bsc.drpc.org", "https://binance.llamarpc.com"];
+const DEFAULT_RPCS = [
+  "https://bsc-rpc.publicnode.com", "https://bsc.drpc.org", "https://1rpc.io/bnb", "https://bsc.meowrpc.com",
+  "https://bsc-mainnet.public.blastapi.io", "https://bsc-pokt.nodies.app", "https://binance.llamarpc.com",
+  "https://bsc-dataseed.bnbchain.org", "https://bsc-dataseed1.defibit.io",
+];
 const LOG_CHUNK = 1000, MAX_CHUNKS = 10;   // small ranges — free public nodes limit eth_getLogs
 const PAID = ["processing", "delivered", "completed", "disputed"];
 
@@ -56,8 +60,11 @@ export async function onRequestGet({ request, env }) {
   try { out.blockchain = "ok (block " + Number(await rpc("eth_blockNumber", [])) + ")"; }
   catch (e) { out.blockchain = "error: " + String(e.message || e).slice(0, 160); }
   try {
-    const l = await rpc("eth_getLogs", [{ address: USDT_BEP20, fromBlock: "latest", toBlock: "latest", topics: [TRANSFER] }]);
-    out.logs = "ok (" + (l || []).length + ")";
+    const latest = Number(await rpc("eth_blockNumber", []));
+    const wallet = String(NX_CONFIG.WALLETS.usdt_bep20 || "").toLowerCase();
+    out.logsPerNode = await rpc.each("eth_getLogs", [{ address: USDT_BEP20, fromBlock: hex(latest - LOG_CHUNK), toBlock: hex(latest),
+                                                        topics: [TRANSFER, null, pad32(wallet)] }]);
+    out.logs = Object.values(out.logsPerNode).some(v => v.startsWith("ok")) ? "ok" : "error: no node allows it";
   } catch (e) { out.logs = "error: " + String(e.message || e).slice(0, 160); }
   return json(out);
 }
@@ -217,22 +224,40 @@ function usdtTo(logs, wallet) {
 }
 
 /* ---------- BNB Smart Chain JSON-RPC (tries several public nodes) ---------- */
+const badFor = {};   // node → methods it failed (kept while the worker is warm)
 function makeRpc(env) {
-  const urls = (env.BSC_RPC ? env.BSC_RPC.split(",").map(s => s.trim()).filter(Boolean) : []).concat(DEFAULT_RPCS);
+  const urls = [...new Set((env.BSC_RPC ? env.BSC_RPC.split(",").map(s => s.trim()).filter(Boolean) : []).concat(DEFAULT_RPCS))];
   let id = 0;
-  return async function rpc(method, params) {
-    let last;
-    for (const u of urls) {
-      try {
-        const r = await fetch(u, { method: "POST", headers: { "content-type": "application/json" },
-                                   body: JSON.stringify({ jsonrpc: "2.0", id: ++id, method, params }) });
-        const j = await r.json();
-        if (j.error) throw new Error(method + ": " + (j.error.message || JSON.stringify(j.error)));
-        return j.result;
-      } catch (e) { last = e; }
-    }
-    throw last || new Error("rpc failed");
+  const one = async (u, method, params) => {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+    try {
+      const r = await fetch(u, { method: "POST", headers: { "content-type": "application/json" }, signal: ctl.signal,
+                                 body: JSON.stringify({ jsonrpc: "2.0", id: ++id, method, params }) });
+      const txt = await r.text();
+      let j; try { j = JSON.parse(txt); } catch { throw new Error("HTTP " + r.status + " " + txt.slice(0, 60)); }
+      if (j.error) throw new Error(j.error.message || JSON.stringify(j.error));
+      if (j.result === undefined) throw new Error("no result");
+      return j.result;
+    } finally { clearTimeout(t); }
   };
+  async function rpc(method, params) {
+    const errs = [];
+    const order = urls.filter(u => !(badFor[u] || {})[method]).concat(urls.filter(u => (badFor[u] || {})[method]));
+    for (const u of order) {
+      try { return await one(u, method, params); }
+      catch (e) { (badFor[u] = badFor[u] || {})[method] = true; errs.push(new URL(u).host + ": " + String(e.message || e).slice(0, 80)); }
+    }
+    throw new Error(method + " failed on all nodes — " + errs.join(" | "));
+  }
+  rpc.each = async (method, params) => {
+    const out = {};
+    await Promise.all(urls.map(async u => {
+      try { const r = await one(u, method, params); out[new URL(u).host] = Array.isArray(r) ? "ok (" + r.length + ")" : "ok"; }
+      catch (e) { out[new URL(u).host] = "error: " + String(e.message || e).slice(0, 70); }
+    }));
+    return out;
+  };
+  return rpc;
 }
 
 /* ---------- Firestore REST with the service account ---------- */
