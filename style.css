@@ -991,3 +991,25 @@ a.sb-link:hover img { transform: scale(1.05); }
 .rv-del-tab.active { background: #ef4444 !important; color: #fff !important; }
 .rv-deleted { opacity: .8; border-color: rgba(239,68,68,.35); }
 .rv-badge-del { background: rgba(239,68,68,.15); color: #fca5a5; }
+/* admin: team + activity */
+.adm-role { margin-left: auto; align-self: center; font-size: 12px; color: var(--muted); }
+.tm-box { padding: 18px; margin-bottom: 14px; }
+.tm-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 0; border-top: 1px solid var(--border); }
+.tm-row:first-child { border-top: 0; }
+.tm-perms { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 12px 0; flex: 1; }
+.tm-perm { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+.tm-btns { display: flex; gap: 8px; }
+#tmEmail { max-width: 360px; }
+.act-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.act-bar .adm-search { max-width: 260px; }
+.act-list { padding: 6px 16px; }
+.act-row { display: grid; grid-template-columns: 170px 220px 1fr; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); font-size: 13px; }
+.act-row:first-child { border-top: 0; }
+.act-time { color: var(--muted); }
+.act-by { font-weight: 600; word-break: break-all; }
+.act-what span { color: var(--muted); }
+.act-extra { margin-top: 6px; padding: 8px 10px; border-radius: 8px; background: var(--card-2); color: var(--muted); font-size: 12.5px; }
+.act-mini { display: grid; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.act-mini b { color: var(--text, #fff); }
+@media (max-width: 760px) { .act-row { grid-template-columns: 1fr; gap: 4px; } }
+.act-bar { justify-content: flex-start !important; }

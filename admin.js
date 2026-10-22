@@ -35,7 +35,7 @@ NX.onAuth(user => {
     return;
   }
   if (!user) return show("#admLogin");
-  if (NX.isAdminEmail() && !NX.isAdmin()) {
+  if (!user.emailVerified && (NX.isAdminEmail() || !NX.isAdmin())) {
     show("#admDenied");
     $("#admDeniedTitle").textContent = "Verify your email first";
     $("#admDeniedText").innerHTML = `For security, the admin email must be verified. Sign in with Google, or
@@ -46,12 +46,16 @@ NX.onAuth(user => {
   if (!NX.isAdmin()) {
     show("#admDenied");
     $("#admDeniedTitle").textContent = "Not authorized";
-    $("#admDeniedText").textContent = `${user.email} isn't in ADMIN_EMAILS (config.js) and firestore.rules.`;
+    $("#admDeniedText").textContent = `${user.email} isn't on the admin team. Ask an owner to add you in the Team tab.`;
     return;
   }
   show("#admMain");
-  startSupport();
+  setupViews();
+  try { const k = "nx_admin_login_" + user.email; if (!sessionStorage.getItem(k)) { sessionStorage.setItem(k, "1"); NX.logActivity("admin.login", {}); } } catch {}
+  if (NX.can("support")) startSupport();
   loadPriceOverrides();
+  if (NX.isOwner()) startTeam();
+  if (!(NX.can("orders") || NX.can("payments") || NX.can("reviews"))) return;
   stopAll = NX.watchAllOrders(list => {
     const before = new Map(all.map(o => [o.id, o]));
     const fresh = all.length && list.filter(o => !before.has(o.id));
@@ -62,9 +66,8 @@ NX.onAuth(user => {
     if (fresh && fresh.length) toast(`🛒 ${fresh.length} new order${fresh.length > 1 ? "s" : ""}!`);
     if (newDisputes && newDisputes.length) toast(`⚠ New dispute on #${shortId(newDisputes[0].id)}!`);
     render();
-    autoComplete();
-    syncStats();
-    checkOpenPayments();
+    if (NX.can("orders") || NX.can("payments")) { autoComplete(); syncStats(); }
+    if (NX.can("payments")) checkOpenPayments();
   }, err => {
     show("#admDenied");
     $("#admDeniedTitle").textContent = "Can't read orders";
@@ -176,11 +179,12 @@ function renderDetail() {
   const m = PAY_METHODS[o.payMethod] || {}, exp = expectedTotal(o);
   const bad = exp != null && Math.abs(exp - o.total) > 0.01;
 
-  const actions = {
-    awaiting_payment: `
+  const P = NX.can("payments"), OR = NX.can("orders") || P;
+  const actions = !OR ? {} : {
+    awaiting_payment: !P ? `<p class="panel-sub">🔒 Payments are handled by the payments team.</p>` : `
       <button class="btn btn-primary" data-act="paid">✓ Mark as paid</button>
       <button class="btn btn-ghost" data-act="cancel">✕ Cancel</button>`,
-    payment_submitted: `
+    payment_submitted: !P ? `<p class="panel-sub">🔒 Payments are handled by the payments team.</p>` : `
       <button class="btn btn-primary" data-act="confirm">✓ Payment received</button>
       <button class="btn btn-ghost" data-act="reject">↩ Payment not found</button>
       <button class="btn btn-ghost" data-act="cancel">✕ Cancel</button>`,
@@ -243,6 +247,8 @@ function renderDetail() {
       ${COUNTED.includes(o.status) ? `<button class="btn btn-ghost btn-sm" data-act="togglestats">${o.hideFromStats ? "Count it again" : "Remove from count"}</button>` : ""}
       ${o.reviewDeleted ? `<span class="muted-inline">⭐ Review deleted by admin</span>` : ""}
     </div>
+
+    ${orderHistory(o.id)}
 
     <h4 class="adm-h">Chat</h4>
     <div class="chat-list adm-chat" id="admChat"></div>
@@ -346,6 +352,9 @@ document.addEventListener("click", async e => {
       adminReviews = adminReviews.filter(x => x.id !== r.id);
       deletedReviews.unshift({ ...r, deletedAt: Date.now() });
       renderAdminReviews();
+      NX.logActivity("review.deleted", { target: "review", targetId: r.id,
+        summary: `${r.stars}★ by ${r.name || "Customer"}: "${(r.auto ? "automatic rating" : r.text || "").slice(0, 80)}" — Order #${shortId(r.id)}`,
+        details: { stars: r.stars, text: r.text || "", name: r.name || "", removedFromCount: !!alsoCount } });
       toast(alsoCount ? "🗑 Review deleted and order removed from the count" : "🗑 Review deleted");
     } catch (err) { console.error(err); toast("Couldn't delete — check that the latest firestore rules are published."); d.disabled = false; }
     return;
@@ -364,10 +373,103 @@ document.addEventListener("click", async e => {
       deletedReviews = deletedReviews.filter(x => x.id !== r.id);
       const { deletedAt, ...back } = r; adminReviews.unshift(back);
       renderAdminReviews();
+      NX.logActivity("review.restored", { target: "review", targetId: r.id,
+        summary: `${r.stars}★ by ${r.name || "Customer"} — Order #${shortId(r.id)}`, details: { countedAgain: !!countAgain } });
       toast("↩ Review restored");
     } catch (err) { console.error(err); toast("Couldn't restore — check that the latest firestore rules are published."); rs.disabled = false; }
   }
 });
+
+/* ---------- 👥 Team (owners only) ---------- */
+const PERM_LABEL = { payments: "💰 Payments (confirm / reject / cancel unpaid)", orders: "🛒 Orders (deliver, disputes, complete)",
+                     support: "💬 Support", prices: "💲 Prices", reviews: "⭐ Reviews" };
+let team = [], teamStarted = false;
+function startTeam() { if (teamStarted) return; teamStarted = true; NX.watchStaff(list => { team = list; renderTeam(); }); }
+function renderTeam() {
+  $("#teamOwners").innerHTML = ADMIN_EMAILS.map(e => `<div class="tm-row"><strong>${esc(e)}</strong><span class="rv-badge">👑 Owner — everything</span></div>`).join("");
+  $("#teamList").innerHTML = team.length ? team.map(m => `
+    <div class="tm-row" data-tm="${esc(m.email)}">
+      <strong>${esc(m.email)}</strong>
+      <div class="tm-perms">${NX.PERMS.map(p => `<label class="tm-perm"><input type="checkbox" data-perm="${p}" ${(m.perms || []).includes(p) ? "checked" : ""}> ${PERM_LABEL[p]}</label>`).join("")}</div>
+      <div class="tm-btns"><button class="btn btn-ghost btn-sm" data-tmsave>Save</button><button class="btn btn-danger btn-sm" data-tmdel>Remove</button></div>
+    </div>`).join("") : `<p class="panel-sub">No team members yet.</p>`;
+}
+const tmPerms = (row) => [...row.querySelectorAll("[data-perm]")].filter(i => i.checked).map(i => i.dataset.perm);
+document.addEventListener("click", async e => {
+  if (e.target.id === "tmAdd") {
+    const email = $("#tmEmail").value.trim().toLowerCase(), perms = tmPerms($("#tmNew"));
+    if (!/^\S+@\S+\.\S+$/.test(email)) return toast("Enter a valid email");
+    if (ADMIN_EMAILS.map(x => x.toLowerCase()).includes(email)) return toast("That email is already an owner");
+    if (!perms.length) return toast("Choose at least one permission");
+    try {
+      await NX.setStaff(email, { perms, addedAt: Date.now() });
+      NX.logActivity("team.added", { target: "team", targetId: email, summary: `${email} — ${perms.join(", ")}`, details: { perms } });
+      $("#tmEmail").value = ""; $$("#tmNew [data-perm]").forEach(i => i.checked = false); toast("✅ Team member added");
+    } catch (err) { console.error(err); toast("Couldn't add — check the firestore rules are published."); }
+    return;
+  }
+  const row = e.target.closest("[data-tm]"); if (!row) return;
+  const email = row.dataset.tm, old = (team.find(m => m.email === email) || {}).perms || [];
+  if (e.target.closest("[data-tmsave]")) {
+    const perms = tmPerms(row); if (!perms.length) return toast("Choose at least one permission (or remove the member)");
+    try { await NX.setStaff(email, { perms }); NX.logActivity("team.permissions_changed", { target: "team", targetId: email, summary: `${email}: ${old.join(", ") || "—"} → ${perms.join(", ")}`, details: { from: old, to: perms } }); toast("✅ Saved"); }
+    catch (err) { console.error(err); toast("Couldn't save"); }
+  }
+  if (e.target.closest("[data-tmdel]")) {
+    if (!confirm(`Remove ${email} from the team? They will lose access right away.`)) return;
+    try { await NX.removeStaff(email); NX.logActivity("team.removed", { target: "team", targetId: email, summary: email, details: { perms: old } }); toast("🗑 Removed"); }
+    catch (err) { console.error(err); toast("Couldn't remove"); }
+  }
+});
+
+/* ---------- 📜 Activity log (owners only) ---------- */
+const ACT_LABEL = {
+  "admin.login": "🔑 Opened the admin panel", "order.mark_paid": "💰 Marked as paid", "order.payment_confirmed": "✅ Confirmed payment",
+  "order.payment_rejected": "↩ Rejected payment", "order.payment_auto_confirmed": "🤖 Payment auto-confirmed (blockchain)",
+  "order.delivered": "📦 Delivered order", "order.redelivered": "📦 Re-delivered order", "order.completed": "✓ Completed order",
+  "order.cancelled": "✕ Cancelled order", "order.remove_from_count": "🚫 Removed order from store count", "order.count_again": "✅ Counted order again",
+  "review.deleted": "🗑 Deleted review", "review.restored": "↩ Restored review", "prices.changed": "💲 Changed prices", "prices.reset": "💲 Reset prices",
+  "support.closed": "💬 Closed conversation", "support.reopened": "💬 Reopened conversation",
+  "team.added": "👥 Added team member", "team.permissions_changed": "👥 Changed permissions", "team.removed": "👥 Removed team member",
+};
+let acts = [], actStarted = false, actWho = "all", actKind = "all", actQ = "";
+function startActivity() { if (actStarted) return renderActivity(); actStarted = true; NX.watchActivity(list => { acts = list; renderActivity(); }); }
+function renderActivity() {
+  const people = [...new Set(acts.map(a => a.by))];
+  $("#actWho").innerHTML = `<option value="all">Everyone</option>` + people.map(p => `<option ${p === actWho ? "selected" : ""}>${esc(p)}</option>`).join("");
+  const kinds = [["all", "All actions"], ["order", "Orders"], ["review", "Reviews"], ["prices", "Prices"], ["support", "Support"], ["team", "Team"], ["admin", "Logins"]];
+  $("#actKind").innerHTML = kinds.map(([k, l]) => `<option value="${k}" ${k === actKind ? "selected" : ""}>${l}</option>`).join("");
+  const q = actQ.toLowerCase();
+  const list = acts.filter(a => (actWho === "all" || a.by === actWho) && (actKind === "all" || a.action.startsWith(actKind + "."))
+    && (!q || [a.summary, a.targetId, a.by, shortId(a.targetId || "")].join(" ").toLowerCase().includes(q)));
+  $("#actList").innerHTML = list.length ? list.map(a => {
+    const d = a.details || {}, extra = [];
+    if (d.reason) extra.push(`Reason: ${esc(d.reason)}`);
+    if (d.changes) extra.push(d.changes.map(esc).join("<br>"));
+    if (d.text) extra.push(`"${esc(d.text)}"`);
+    return `<div class="act-row">
+      <small class="act-time">${new Date(a.at).toLocaleString()}</small>
+      <span class="act-by">${esc(a.by === "system" ? "🤖 system" : a.by)}</span>
+      <div class="act-what"><strong>${ACT_LABEL[a.action] || esc(a.action)}</strong> <span>${esc(a.summary || "")}</span>
+        ${a.target === "order" ? ` <a href="#" data-openorder="${esc(a.targetId)}">open</a>` : ""}
+        ${extra.length ? `<div class="act-extra">${extra.join("<br>")}</div>` : ""}</div>
+    </div>`;
+  }).join("") : `<p class="panel-sub">Nothing here yet.</p>`;
+}
+document.addEventListener("change", e => {
+  if (e.target.id === "actWho") { actWho = e.target.value; renderActivity(); }
+  if (e.target.id === "actKind") { actKind = e.target.value; renderActivity(); }
+});
+document.addEventListener("input", e => { if (e.target.id === "actQ") { actQ = e.target.value.trim(); renderActivity(); } });
+/* order page: its history (owners) */
+function orderHistory(id) {
+  if (!NX.isOwner()) return "";
+  if (!actStarted) { actStarted = true; NX.watchActivity(list => { acts = list; renderActivity(); if (selId) renderDetail(); }); }
+  const h = acts.filter(a => a.targetId === id && a.target === "order").reverse();
+  return `<h4 class="adm-h">History</h4>` + (h.length ? `<div class="act-mini">${h.map(a =>
+    `<div><small>${new Date(a.at).toLocaleString()}</small> · <b>${esc(a.by === "system" ? "🤖 system" : a.by)}</b> — ${ACT_LABEL[a.action] || esc(a.action)}${a.details && a.details.reason ? ` (${esc(a.details.reason)})` : ""}</div>`).join("")}</div>`
+    : `<p class="panel-sub">No admin actions yet.</p>`);
+}
 
 /* auto-complete orders delivered more than AUTO_COMPLETE_DAYS ago */
 let autoRan = false;
@@ -399,6 +501,12 @@ $("#admDetail").addEventListener("click", async e => {
   const act = b.dataset.act;
   b.disabled = true;
   try {
+    const LOG = { togglestats: o.hideFromStats ? "order.count_again" : "order.remove_from_count", paid: "order.mark_paid", confirm: "order.payment_confirmed",
+                  reject: "order.payment_rejected", deliver: "order.delivered", redeliver: "order.redelivered", complete: "order.completed", cancel: "order.cancelled" };
+    const orderInfo = (extra = {}) => ({ target: "order", targetId: o.id,
+      summary: `Order #${shortId(o.id)} — $${Number(o.total).toFixed(2)} — ${o.buyerEmail || ""}`, details: { from: o.status, ...extra } });
+    window._nxLog = () => NX.logActivity(LOG[act], orderInfo(window._nxLogExtra || {}));
+    window._nxLogExtra = {};
     if (act === "togglestats") {
       await NX.updateOrder(o.id, { hideFromStats: !o.hideFromStats });
       toast(o.hideFromStats ? "✅ Order counted again" : "🚫 Order removed from the store's count");
@@ -411,6 +519,7 @@ $("#admDetail").addEventListener("click", async e => {
       const why = prompt("What's wrong with the payment? (the customer will see this)", "We couldn't find your payment on the blockchain. Please check the TXID and network.");
       if (why === null) { b.disabled = false; return; }
       await NX.updateOrder(o.id, { status: "awaiting_payment", txHash: "", verifyNote: "", rejectedAt: Date.now() });
+      window._nxLogExtra = { reason: why, txHash: o.txHash || "" };
       await NX.sendMessage(o.id, `⚠ ${why}`, "admin");
     }
     if (act === "deliver") {
@@ -433,10 +542,12 @@ $("#admDetail").addEventListener("click", async e => {
       const why = prompt("Reason for cancelling (the customer will see this):", "");
       if (why === null) { b.disabled = false; return; }
       await NX.updateOrder(o.id, { status: "cancelled", cancelledBy: "admin", cancelReason: why });
+      window._nxLogExtra = { reason: why };
       if (why) await NX.sendMessage(o.id, `✕ Order cancelled: ${why}`, "admin");
     }
+    if (LOG[act]) window._nxLog();
     toast("✅ Updated");
-  } catch (err) { console.error(err); toast("Couldn't update — check your connection / rules."); b.disabled = false; }
+  } catch (err) { console.error(err); toast("Couldn't update — you may not have permission for this."); b.disabled = false; }
 });
 
 $("#admDetail").addEventListener("submit", async e => {
@@ -467,15 +578,25 @@ function startSupport() {
   }, () => {});
 }
 
-$$(".adm-view").forEach(b => b.addEventListener("click", () => {
-  $$(".adm-view").forEach(x => x.classList.toggle("active", x === b));
-  $("#admOrders").hidden = b.dataset.view !== "orders";
-  $("#admSupport").hidden = b.dataset.view !== "support";
-  $("#admPrices").hidden = b.dataset.view !== "prices";
-  $("#admReviews").hidden = b.dataset.view !== "reviews";
-  if (b.dataset.view === "prices") renderPrices();
-  if (b.dataset.view === "reviews") loadAdminReviews();
-}));
+const VIEW_ALLOWED = {
+  orders: () => NX.can("orders") || NX.can("payments"), support: () => NX.can("support"), prices: () => NX.can("prices"),
+  reviews: () => NX.can("reviews"), team: () => NX.isOwner(), activity: () => NX.isOwner(),
+};
+const VIEW_BOX = { orders: "#admOrders", support: "#admSupport", prices: "#admPrices", reviews: "#admReviews", team: "#admTeam", activity: "#admActivity" };
+function openView(v) {
+  $$(".adm-view").forEach(x => x.classList.toggle("active", x.dataset.view === v));
+  Object.entries(VIEW_BOX).forEach(([k, sel]) => { $(sel).hidden = k !== v; });
+  if (v === "prices") renderPrices();
+  if (v === "reviews") loadAdminReviews();
+  if (v === "activity") startActivity();
+}
+function setupViews() {
+  $$(".adm-view").forEach(b => { b.hidden = !VIEW_ALLOWED[b.dataset.view](); });
+  $("#admRole").textContent = NX.isOwner() ? "Owner" : "Team · " + ((NX.staff && NX.staff.perms) || []).join(", ");
+  const first = Object.keys(VIEW_ALLOWED).find(v => VIEW_ALLOWED[v]());
+  if (first) openView(first);
+}
+$$(".adm-view").forEach(b => b.addEventListener("click", () => openView(b.dataset.view)));
 
 function renderSupport() {
   const nWait = tks.filter(waiting).length;
@@ -528,7 +649,11 @@ $("#supList").addEventListener("click", e => {
 });
 $("#supDetail").addEventListener("click", async e => {
   const b = e.target.closest("[data-tkact]"); if (!b || !supSel) return;
-  try { await NX.setTicketStatus(supSel, b.dataset.tkact === "close" ? "closed" : "open"); toast("✅ Updated"); } catch { toast("Couldn't update"); }
+  try {
+    await NX.setTicketStatus(supSel, b.dataset.tkact === "close" ? "closed" : "open"); toast("✅ Updated");
+    const t = tks.find(x => x.id === supSel) || {};
+    NX.logActivity(b.dataset.tkact === "close" ? "support.closed" : "support.reopened", { target: "ticket", targetId: supSel, summary: `${t.reason || "Conversation"} — ${t.buyerEmail || ""}` });
+  } catch { toast("Couldn't update"); }
 });
 $("#supDetail").addEventListener("submit", async e => {
   if (e.target.id !== "supForm") return;
@@ -631,14 +756,23 @@ $("#prEditor").addEventListener("click", async e => {
     try { data = readEditor(); } catch (err) { return toast("⚠ " + err.message); }
     const next = { ...priceOv, [prGame]: data };
     e.target.disabled = true;
-    try { await NX.savePrices(next); priceOv = next; applyPrices(priceOv); prDirty = false; renderPrices(); render(); toast("✅ Prices saved — live now"); }
+    const snap = () => { const g = byId(prGame); return g.custom ? [`per ${g.custom.suffix || "unit"}: $${g.custom.perUnit}`]
+      : g.packages.map(p => `${pkgLabel(g, p)}: ${p.hidden ? "hidden" : "$" + p.price}`); };
+    const before = snap();
+    try {
+      await NX.savePrices(next); priceOv = next; applyPrices(priceOv);
+      const after = snap(), changes = after.map((x, i) => x !== before[i] ? `${before[i]} → ${x.split(": ")[1]}` : null).filter(Boolean);
+      if (changes.length) NX.logActivity("prices.changed", { target: "game", targetId: prGame, summary: `${byId(prGame).name}: ${changes.length} change${changes.length > 1 ? "s" : ""}`, details: { changes } });
+      prDirty = false; renderPrices(); render(); toast("✅ Prices saved — live now");
+    }
     catch (err) { console.error(err); toast("Couldn't save — check the Firestore rules are published."); }
     e.target.disabled = false;
   }
   if (e.target.id === "prReset") {
     if (!confirm("Reset this game to the default prices from data.js?")) return;
     const next = { ...priceOv }; delete next[prGame];
-    try { await NX.savePrices(next); priceOv = next; applyPrices(priceOv); prDirty = false; renderPrices(); render(); toast("↩ Back to default prices"); }
+    try { await NX.savePrices(next); priceOv = next; applyPrices(priceOv); prDirty = false; renderPrices(); render(); toast("↩ Back to default prices");
+      NX.logActivity("prices.reset", { target: "game", targetId: prGame, summary: `${byId(prGame).name}: back to default prices` }); }
     catch (err) { console.error(err); toast("Couldn't reset."); }
   }
 });

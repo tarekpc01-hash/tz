@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// NILORIX - Firestore security rules (admin: nilorixstore@gmail.com)
+// NILORIX - Firestore security rules (owners: nilorixstore@gmail.com, nilorix.store1@gmail.com)
 
 // =====================================================================
 // NILORIX - Firestore security rules
@@ -10,18 +10,26 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function signedIn() { return request.auth != null; }
-    function isAdmin() {
+    function verified() {
       // email_verified: stops anyone from registering your email with a password before you do
-      return signedIn() && request.auth.token.email != null
-        && request.auth.token.email_verified == true
-        && request.auth.token.email.lower() in ['nilorixstore@gmail.com'];
+      return signedIn() && request.auth.token.email != null && request.auth.token.email_verified == true;
     }
+    function myEmail() { return request.auth.token.email.lower(); }
+    // owners = full access + Team + Activity log
+    function isOwner() { return verified() && myEmail() in ['nilorixstore@gmail.com', 'nilorix.store1@gmail.com']; }
+    // team members added by an owner in the admin panel (Team tab), with limited permissions
+    function isStaff() { return verified() && exists(/databases/$(database)/documents/staff/$(myEmail())); }
+    function can(p) {
+      return isOwner() || (isStaff() && p in get(/databases/$(database)/documents/staff/$(myEmail())).data.perms);
+    }
+    function isAdmin() { return isOwner() || isStaff(); }
+    function unpaid(st) { return st in ['awaiting_payment', 'payment_submitted']; }
     function orderDoc(id) { return get(/databases/$(database)/documents/orders/$(id)); }
     function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
 
     // ---------- user profiles ----------
     match /users/{uid} {
-      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow read: if signedIn() && (request.auth.uid == uid || can('orders') || can('payments') || can('support'));
       allow create, update: if signedIn() && request.auth.uid == uid
         && request.resource.data.size() < 10;   // name, email, photo (small), createdAt
       allow delete: if false;
@@ -29,7 +37,7 @@ service cloud.firestore {
 
     // ---------- orders ----------
     match /orders/{orderId} {
-      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || can('orders') || can('payments') || can('reviews'));
 
       // buyer creates a new order for himself, always starting as "awaiting_payment"
       allow create: if signedIn()
@@ -47,7 +55,12 @@ service cloud.firestore {
       //   delivered        -> completed (order received)
       //   delivered        -> disputed  (didn't receive it - opens a dispute)
       //   disputed         -> completed (received it after all)
-      allow update: if isAdmin() || (
+      // team: "payments" can confirm/reject/cancel unpaid orders; "orders" handles paid orders (deliver, disputes...);
+      //       "reviews" can only flag an order (review deleted / hidden from the store count)
+      allow update: if can('payments')
+        || (can('orders') && !unpaid(resource.data.status) && !unpaid(request.resource.data.status))
+        || (can('reviews') && changed().hasOnly(['reviewDeleted', 'hideFromStats', 'updatedAt']))
+        || (
         signedIn() && resource.data.uid == request.auth.uid && (
           (resource.data.status == 'awaiting_payment' && request.resource.data.status == 'payment_submitted'
              && changed().hasOnly(['status', 'txHash', 'paidAt', 'updatedAt'])
@@ -64,45 +77,45 @@ service cloud.firestore {
              && request.resource.data.disputeReason.size() > 0 && request.resource.data.disputeReason.size() <= 1200)
         )
       );
-      allow delete: if isAdmin();
+      allow delete: if isOwner();
 
       // ---------- chat inside each order ----------
       match /messages/{msgId} {
-        allow read: if signedIn() && (isAdmin() || orderDoc(orderId).data.uid == request.auth.uid);
+        allow read: if signedIn() && (can('orders') || can('payments') || orderDoc(orderId).data.uid == request.auth.uid);
         allow create: if signedIn()
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.text is string
           && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 1000
-          && ( (isAdmin() && request.resource.data.from == 'admin')
+          && ( ((can('orders') || can('payments')) && request.resource.data.from == 'admin')
             || (orderDoc(orderId).data.uid == request.auth.uid && request.resource.data.from == 'buyer') );
-        allow update, delete: if isAdmin();
+        allow update, delete: if isOwner();
       }
     }
 
     // ---------- support tickets (chat widget) ----------
     match /tickets/{ticketId} {
-      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || can('support'));
       allow create: if signedIn()
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.status == 'open'
         && request.resource.data.reason is string && request.resource.data.reason.size() <= 80;
       // buyer can only bump the "last message" info (and re-open); admin can do anything
-      allow update: if isAdmin() || (
+      allow update: if can('support') || (
         signedIn() && resource.data.uid == request.auth.uid
         && changed().hasOnly(['updatedAt', 'lastFrom', 'lastText', 'status'])
         && request.resource.data.status == 'open' && request.resource.data.lastFrom == 'buyer'
       );
-      allow delete: if isAdmin();
+      allow delete: if isOwner();
 
       match /messages/{msgId} {
-        allow read: if signedIn() && (isAdmin() || get(/databases/$(database)/documents/tickets/$(ticketId)).data.uid == request.auth.uid);
+        allow read: if signedIn() && (can('support') || get(/databases/$(database)/documents/tickets/$(ticketId)).data.uid == request.auth.uid);
         allow create: if signedIn()
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.text is string
           && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 1000
-          && ( (isAdmin() && request.resource.data.from == 'admin')
+          && ( (can('support') && request.resource.data.from == 'admin')
             || (get(/databases/$(database)/documents/tickets/$(ticketId)).data.uid == request.auth.uid && request.resource.data.from == 'buyer') );
-        allow update, delete: if isAdmin();
+        allow update, delete: if isOwner();
       }
     }
 
@@ -110,7 +123,7 @@ service cloud.firestore {
     match /reviews/{orderId} {
       allow read: if true;
       // admin panel writes the automatic 5-star review (buyer didn't review within 3 days)
-      allow create: if isAdmin();
+      allow create: if can('reviews') || (can('orders') && request.resource.data.auto == true);
       allow create: if signedIn()
         && orderDoc(orderId).data.uid == request.auth.uid
         && orderDoc(orderId).data.status == 'completed'
@@ -127,30 +140,46 @@ service cloud.firestore {
         && request.resource.data.stars is int
         && request.resource.data.stars >= 1 && request.resource.data.stars <= 5
         && request.resource.data.text is string && request.resource.data.text.size() <= 500;
-      allow update, delete: if isAdmin();
+      allow update, delete: if can('reviews');
     }
 
     // ---------- prices set from the admin panel (public read) ----------
     match /config/{doc} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if can('prices');
     }
 
     // ---------- reviews deleted by the admin (kept for the admin only) ----------
     match /deletedReviews/{orderId} {
-      allow read, write: if isAdmin();
+      allow read, write: if can('reviews');
     }
 
     // ---------- used blockchain transactions (written only by the server checker) ----------
     match /payments/{tx} {
-      allow read: if isAdmin();
+      allow read: if isOwner();
       allow write: if false;
     }
 
     // ---------- public store stats (orders count) ----------
     match /stats/{doc} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if can('orders') || can('payments');
+    }
+
+    // ---------- admin team (owners add members + permissions in the Team tab) ----------
+    match /staff/{email} {
+      allow read: if isOwner() || (verified() && myEmail() == email);
+      allow write: if isOwner() && email == email.lower();
+    }
+
+    // ---------- activity log: anyone on the team can ADD a line about themselves, nobody can edit/delete ----------
+    match /activity/{id} {
+      allow create: if isAdmin()
+        && request.resource.data.by == myEmail()
+        && request.resource.data.action is string
+        && request.resource.data.at is int;
+      allow read: if isOwner();
+      allow update, delete: if false;
     }
   }
 }

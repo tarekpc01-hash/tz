@@ -13,9 +13,9 @@ const FIREBASE_CONFIG = {
   appId: "1:413256952587:web:6088bf48f998e01015900e",
 };
 
-/* 2) إيميل الأدمن — اللي يسجّل دخول بيه يقدر يفتح لوحة التحكم (nilorixstoreadmmin5656.html)
-      (لازم يبقى نفس الإيميل المكتوب في firestore.rules) */
-const ADMIN_EMAILS = ["nilorixstore@gmail.com"];
+/* 2) إيميلات الأدمن الأساسيين (كل الصلاحيات + Team + Activity) — لازم نفس الإيميلات في firestore.rules
+      الموظفين بصلاحيات محدودة بيتضافوا من تاب Team في لوحة التحكم (مش من هنا) */
+const ADMIN_EMAILS = ["nilorixstore@gmail.com", "nilorix.store1@gmail.com"];
 
 /* 3) عناوين المحافظ اللي العميل هيحوّل عليها — راجعها كويس جداً */
 const WALLETS = {

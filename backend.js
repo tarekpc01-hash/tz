@@ -24,7 +24,18 @@ const NX = (() => {
   let authKnown = false;
   const authListeners = [];
   const isAdminEmail = () => !!(user && user.email && ADMIN_EMAILS.map(e => e.toLowerCase()).includes(user.email.toLowerCase()));
-  const isAdmin = () => isAdminEmail() && !!user.emailVerified;   // must be verified (Google sign-in is verified automatically)
+  /* owners (ADMIN_EMAILS) = everything. Team members (staff/{email}) = only their permissions. Email must be verified. */
+  const PERMS = ["payments", "orders", "support", "prices", "reviews"];
+  let staff = null;
+  const isOwner = () => isAdminEmail() && !!user.emailVerified;
+  const isAdmin = () => isOwner() || (!!user && !!user.emailVerified && !!staff);
+  const can = (p) => isOwner() || (!!user && !!user.emailVerified && !!staff && (staff.perms || []).includes(p));
+  async function loadStaff() {
+    staff = null;
+    if (!user || !user.email || isAdminEmail()) return;
+    try { const d = await db.collection("staff").doc(user.email.toLowerCase()).get(); staff = d.exists ? d.data() : null; }
+    catch (e) { staff = null; }
+  }
 
   function emitAuth() { authListeners.forEach(fn => { try { fn(user, profile); } catch (e) { console.error(e); } }); }
   function onAuth(fn) { authListeners.push(fn); if (authKnown) fn(user, profile); }
@@ -43,6 +54,7 @@ const NX = (() => {
           }
         } catch (e) { console.error(e); profile = { name: u.displayName || "", email: u.email || "", photo: "" }; }
       }
+      await loadStaff();
       authKnown = true;
       emitAuth();
     });
@@ -75,7 +87,7 @@ const NX = (() => {
   const resetPassword = (email) => auth.sendPasswordResetEmail(email);
   const signOut = () => auth.signOut();
   const sendVerification = () => user && user.sendEmailVerification();
-  const reloadUser = async () => { if (user) { await user.reload(); user = auth.currentUser; emitAuth(); } };
+  const reloadUser = async () => { if (user) { await user.reload(); user = auth.currentUser; await loadStaff(); emitAuth(); } };
 
   async function saveProfile(p) {
     if (!user) throw new Error("Not signed in");
@@ -173,6 +185,23 @@ const NX = (() => {
       return s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
     } catch (e) { console.error(e); return []; }
   }
+  /* ---------- team (owners only) ---------- */
+  const staffCol = () => db.collection("staff");
+  const watchStaff = (cb) => staffCol().onSnapshot(s => cb(s.docs.map(d => ({ email: d.id, ...d.data() }))), e => { console.error(e); cb([]); });
+  const setStaff = (email, data) => staffCol().doc(email.toLowerCase()).set({ ...data, updatedAt: Date.now(), updatedBy: user.email.toLowerCase() });
+  const removeStaff = (email) => staffCol().doc(email.toLowerCase()).delete();
+
+  /* ---------- activity log: who did what (append-only) ---------- */
+  function logActivity(action, info = {}) {
+    if (!user || !isAdmin()) return Promise.resolve();
+    return db.collection("activity").add({
+      by: user.email.toLowerCase(), byName: (profile && profile.name) || "", at: Date.now(), action,
+      target: info.target || "", targetId: info.targetId || "", summary: info.summary || "", details: info.details || {},
+    }).catch(e => console.error("activity log", e));
+  }
+  const watchActivity = (cb, limit = 500) => db.collection("activity").orderBy("at", "desc").limit(limit)
+    .onSnapshot(s => cb(s.docs.map(d => ({ id: d.id, ...d.data() }))), e => { console.error(e); cb([]); });
+
   /* admin only: deleted reviews are moved to "deletedReviews" (hidden from the site, kept for the admin) */
   async function deleteReview(r) {
     const { id, ...data } = r;
@@ -242,7 +271,8 @@ const NX = (() => {
   }
 
   return {
-    enabled, onAuth, get user() { return user; }, get profile() { return profile; }, isAdmin, isAdminEmail, sendVerification, reloadUser,
+    enabled, onAuth, get user() { return user; }, get profile() { return profile; }, isAdmin, isAdminEmail, isOwner, can, PERMS, get staff() { return staff; }, loadStaff,
+    watchStaff, setStaff, removeStaff, logActivity, watchActivity, sendVerification, reloadUser,
     errText, signUp, signIn, signInGoogle, resetPassword, signOut, saveProfile,
     createOrder, watchMyOrders, watchOrder, updateOrder, submitPayment, cancelOrder, markReceived, openDispute,
     watchMessages, sendMessage, createTicket, watchMyTickets, watchAllTickets, watchTicketMessages, sendTicketMessage, setTicketStatus, loadReviews, addReview, deleteReview, restoreReview, loadDeletedReviews, addAutoReview, loadSales, addSales, setStats, loadPrices, savePrices, watchAllOrders, notifyOwner,

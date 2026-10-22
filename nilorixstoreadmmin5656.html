@@ -65,6 +65,45 @@
       <button class="adm-view" data-view="support">💬 Support <b id="admViewSupport"></b></button>
       <button class="adm-view" data-view="prices">💲 Prices</button>
       <button class="adm-view" data-view="reviews">⭐ Reviews <b id="admViewReviews"></b></button>
+      <button class="adm-view" data-view="team">👥 Team</button>
+      <button class="adm-view" data-view="activity">📜 Activity</button>
+      <span class="adm-role" id="admRole"></span>
+    </div>
+
+    <!-- TEAM (owners only) -->
+    <div id="admTeam" hidden>
+      <div class="panel tm-box">
+        <h3 class="panel-title">👑 Owners</h3>
+        <p class="panel-sub">Full access to everything, including Team and Activity. Owners are set in config.js and firestore.rules.</p>
+        <div id="teamOwners"></div>
+      </div>
+      <div class="panel tm-box" id="tmNew">
+        <h3 class="panel-title">➕ Add a team member</h3>
+        <p class="panel-sub">They sign in to this page with this email (it must be verified) and only see what you allow.</p>
+        <input class="adm-search" id="tmEmail" type="email" placeholder="name@example.com" autocomplete="off">
+        <div class="tm-perms">
+          <label class="tm-perm"><input type="checkbox" data-perm="payments"> 💰 Payments (confirm / reject / cancel unpaid)</label>
+          <label class="tm-perm"><input type="checkbox" data-perm="orders"> 🛒 Orders (deliver, disputes, complete)</label>
+          <label class="tm-perm"><input type="checkbox" data-perm="support"> 💬 Support</label>
+          <label class="tm-perm"><input type="checkbox" data-perm="prices"> 💲 Prices</label>
+          <label class="tm-perm"><input type="checkbox" data-perm="reviews"> ⭐ Reviews</label>
+        </div>
+        <button class="btn btn-primary" id="tmAdd">Add member</button>
+      </div>
+      <div class="panel tm-box">
+        <h3 class="panel-title">👥 Team members</h3>
+        <div id="teamList"></div>
+      </div>
+    </div>
+
+    <!-- ACTIVITY LOG (owners only) -->
+    <div id="admActivity" hidden>
+      <div class="adm-bar act-bar">
+        <select class="adm-search" id="actWho"></select>
+        <select class="adm-search" id="actKind"></select>
+        <input class="adm-search" id="actQ" placeholder="Search order #, email, text…" autocomplete="off">
+      </div>
+      <div class="panel act-list" id="actList"></div>
     </div>
 
     <!-- REVIEWS -->
