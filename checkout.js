@@ -170,6 +170,12 @@ $("#placeBtn").addEventListener("click", async () => {
   }
 });
 
+/* card payment available? (set up on the server) */
+fetch("/api/card").then(r => r.ok ? r.json() : {}).then(j => {
+  const min = (typeof CARD_PAY !== "undefined" && CARD_PAY.minUsd) || 0;
+  if (j && j.enabled && totalUsd() >= min && walletReady("usdt_bep20")) $("#coCardNote").hidden = false;
+}).catch(() => {});
+
 /* default to an available method */
 if (!walletReady(payMethod)) payMethod = Object.keys(PAY_METHODS).find(walletReady) || payMethod;
 window.pageRender = renderCheckout;
