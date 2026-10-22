@@ -134,7 +134,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .game-art::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.18), transparent 50%); }
 .game-art img { width: 72px; height: 72px; object-fit: cover; border-radius: 18px; margin-top: 12px; position: relative; z-index: 1; box-shadow: 0 10px 28px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.12); transition: transform .25s; }
 .game-card:hover .game-art img { transform: scale(1.06); }
-.game-art .ph { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 30px; text-shadow: 0 4px 14px rgba(0,0,0,.45); }
+.game-art .ph { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 52px; text-shadow: 0 4px 14px rgba(0,0,0,.45); }
 .type-pill { position: absolute; top: 10px; left: 10px; z-index: 2; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; background: rgba(0,0,0,.45); backdrop-filter: blur(4px); }
 .game-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 2px; }
 .game-name { font-size: 15px; font-weight: 600; }
@@ -238,7 +238,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   .search { display: none; }
   .currency { display: none; }
   .games-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .game-art .ph { font-size: 22px; }
+  .game-art .ph { font-size: 38px; }
   .trending-list { grid-template-columns: 1fr; }
   .features { gap: 14px; }
   .footer-inner { grid-template-columns: 1fr; }
@@ -265,7 +265,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   box-shadow: 0 16px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.12);
 }
 .gp-logo::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 25% 15%, rgba(255,255,255,.3), transparent 55%); }
-.gp-logo span { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 64px; text-shadow: 0 6px 20px rgba(0,0,0,.45); position: relative; z-index: 1; }
+.gp-logo span { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 84px; text-shadow: 0 6px 20px rgba(0,0,0,.45); position: relative; z-index: 1; }
 .gp-logo img { width: 100%; height: 100%; object-fit: cover; }
 .gp-title .type-pill { position: static; display: inline-block; background: rgba(255,122,0,.15); color: var(--orange); margin-bottom: 6px; }
 .gp-title h1 { font-size: clamp(24px, 3vw, 34px); line-height: 1.15; }
@@ -1013,3 +1013,57 @@ a.sb-link:hover img { transform: scale(1.05); }
 .act-mini b { color: var(--text, #fff); }
 @media (max-width: 760px) { .act-row { grid-template-columns: 1fr; gap: 4px; } }
 .act-bar { justify-content: flex-start !important; }
+/* profile menu: header is a link */
+.pm-head-link { text-decoration: none; color: inherit; border-radius: 12px; transition: .15s; }
+.pm-head-link:hover { background: rgba(255,255,255,.05); }
+.pm-view { display: block; font-style: normal; font-size: 11.5px; color: var(--orange); margin-top: 2px; }
+/* account page */
+.ac-hero { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; padding: 24px; }
+.ac-avatar { width: 96px; height: 96px; border-radius: 50%; overflow: hidden; flex: none; display: grid; place-items: center;
+  background: linear-gradient(135deg, #ff8a00, #8b3dff); font-size: 38px; font-weight: 800; color: #fff; box-shadow: 0 0 0 3px rgba(255,138,0,.35); }
+.ac-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ac-id h1 { font-size: 26px; margin: 0; }
+.ac-id .muted { margin: 2px 0 0; }
+.ac-since { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+.ac-btns { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+.ac-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
+.ac-sec-head { display: flex; align-items: center; justify-content: space-between; }
+#acWrap .panel { margin-bottom: 16px; }
+@media (max-width: 640px) { .ac-stats { grid-template-columns: repeat(2, 1fr); } .ac-btns { margin-left: 0; width: 100%; } }
+/* ===== hero game cards (around the logo) ===== */
+.hero-visual { height: 360px; }
+.hero-logo-wrap { width: 30%; }
+#heroCards { position: absolute; inset: 0; }
+.hcard { position: absolute; width: 168px; padding: 13px; border-radius: 16px; color: #fff; text-decoration: none;
+  background: var(--hc); border: 1px solid rgba(255,255,255,.16); box-shadow: 0 18px 40px rgba(0,0,0,.5);
+  transition: box-shadow .2s, filter .2s; animation: hcFloat 6s ease-in-out infinite; z-index: 3; }
+.hcard:hover { filter: brightness(1.08); box-shadow: 0 22px 50px rgba(0,0,0,.6), 0 0 0 2px rgba(255,255,255,.35); }
+.hc-light { color: #2b1700; }
+.hc-ic { width: 52px; height: 52px; border-radius: 12px; overflow: hidden; display: grid; place-items: center; background: var(--g); box-shadow: 0 4px 12px rgba(0,0,0,.25); }
+.hc-ic img { width: 100%; height: 100%; object-fit: cover; }
+.hc-ic .ph { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 28px; color: #fff; text-shadow: 0 3px 10px rgba(0,0,0,.35); }
+.hcard b { display: block; margin-top: 10px; font-size: 14.5px; line-height: 1.2; }
+.hcard small { display: block; opacity: .85; font-size: 11.5px; }
+.hc-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 10px; font-size: 11.5px; }
+.hc-price { background: rgba(0,0,0,.28); padding: 4px 9px; border-radius: 999px; font-weight: 700; white-space: nowrap; }
+.hc-light .hc-price { background: rgba(0,0,0,.15); }
+.hc-foot i { font-style: normal; opacity: .85; white-space: nowrap; }
+.hc1 { left: 0; top: 0; rotate: -5deg; }
+.hc2 { right: 0; top: 4px; rotate: 5deg; animation-delay: -1.5s; }
+.hc3 { right: 5%; bottom: 0; rotate: -3deg; animation-delay: -3s; }
+.hc4 { left: 5%; bottom: 0; rotate: 4deg; animation-delay: -4.5s; }
+@keyframes hcFloat { 0%,100% { translate: 0 0; } 50% { translate: 0 -8px; } }
+@media (max-width: 1100px) { .hcard { width: 150px; padding: 11px; } .hc-ic { width: 44px; height: 44px; } }
+/* hero spacing tweak: smaller logo, cards pushed to the corners */
+.hero-visual { height: 390px; }
+.hero-logo-wrap { width: 22%; }
+.hcard { width: 156px; }
+.hc1 { left: -2%; top: 0; }
+.hc2 { right: -2%; top: 0; }
+.hc3 { right: 1%; bottom: 0; }
+.hc4 { left: 1%; bottom: 0; }
+.hcard { width: 164px; }
+.hc-foot { font-size: 11px; gap: 4px; }
+.hc-price { padding: 4px 8px; }
+.hc-foot i { font-size: 10.5px; }
+.hero-logo-wrap { width: 25%; }

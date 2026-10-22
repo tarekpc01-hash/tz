@@ -18,7 +18,24 @@ function gameCard(g) {
     </a>`;
 }
 
+/* كروت الهيرو: غيّر الألعاب من هنا (4 ألعاب) */
+const HERO_GAMES = ["fortnite", "robux", "eafc", "genshin"];
+const HERO_NAMES = { eafc: "EA FC Points" };
+const HERO_COLORS = ["linear-gradient(160deg,#2563eb,#7c3aed)", "linear-gradient(160deg,#ffd43b,#f59f00)",
+                     "linear-gradient(160deg,#10b981,#065f46)", "linear-gradient(160deg,#ec4899,#7c3aed)"];
+function renderHero() {
+  const box = $("#heroCards"); if (!box) return;
+  box.innerHTML = HERO_GAMES.map(byId).filter(Boolean).map((g, i) => `
+    <a class="hcard hc${i + 1}${g.id === "robux" ? " hc-light" : ""}" href="${gameUrl(g)}" style="--hc:${HERO_COLORS[i % 4]}">
+      <span class="hc-ic" style="--g:${g.g}">${gameImg(g, "ph")}</span>
+      <b>${esc(HERO_NAMES[g.id] || g.name.replace(/ Top Up$/, ""))}</b>
+      <small>${esc(g.custom ? "Any amount" : g.desc)}</small>
+      <span class="hc-foot"><span class="hc-price">From ${fmt(minPrice(g))}</span><i>⚡ Instant</i></span>
+    </a>`).join("");
+}
+
 function renderHome() {
+  renderHero();
   const bySales = (a, b) => totalSold(b) - totalSold(a);
 
   $("#currencyGrid").innerHTML = games.filter(g => g.type === "currency").sort(bySales).map(gameCard).join("");

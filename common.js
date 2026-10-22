@@ -472,13 +472,14 @@ function renderProfile() {
     return;
   }
   $("#profileMenu").innerHTML = `
-    <div class="pm-head">
+    <a class="pm-head pm-head-link" href="${NX.isOwner() ? "store.html" : "account.html"}" title="${NX.isOwner() ? "View your store page" : "View your account"}">
       <span class="avatar-btn lg">${avatarInner()}</span>
       <div>
         <strong>${esc(p.name || "My account")}</strong>
         <small>${esc(p.email || NX.user.email || "")}</small>
+        <em class="pm-view">${NX.isOwner() ? "View store page →" : "View my account →"}</em>
       </div>
-    </div>
+    </a>
     ${NX.isAdmin() ? `<a class="pm-item" href="nilorixstoreadmmin5656.html"><span>🛠️</span>Admin panel</a>` : ""}
     <button class="pm-item" data-pm="photo"><span>📷</span>${p.photo ? "Change photo" : "Upload photo"}</button>
     <a class="pm-item" href="orders.html"><span>📦</span>My orders</a>
