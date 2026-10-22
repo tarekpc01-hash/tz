@@ -42,7 +42,25 @@ export async function onRequestPost({ request, env }) {
     return json({ state: "unavailable", message: "Couldn't reach the blockchain right now — we'll keep trying." });
   }
 }
-export const onRequestGet = () => json({ ok: true, service: "nilorix payment checker" });
+export async function onRequestGet({ request, env }) {
+  if (new URL(request.url).searchParams.get("diag") !== "1") return json({ ok: true, service: "nilorix payment checker" });
+  /* setup check — shows which part works (never shows any secret) */
+  const out = {};
+  try {
+    const sa = typeof env.FIREBASE_SA === "string" ? JSON.parse(env.FIREBASE_SA) : env.FIREBASE_SA;
+    out.firebaseKey = sa && sa.client_email && sa.private_key ? "ok (" + (sa.project_id || "?") + ")" : "missing fields";
+  } catch (e) { out.firebaseKey = env.FIREBASE_SA ? "not valid JSON — paste the whole file again" : "missing"; }
+  try { const fs = await firestore(env); await fs.get("config/prices"); out.database = "ok"; }
+  catch (e) { out.database = "error: " + String(e.message || e).slice(0, 160); }
+  const rpc = makeRpc(env);
+  try { out.blockchain = "ok (block " + Number(await rpc("eth_blockNumber", [])) + ")"; }
+  catch (e) { out.blockchain = "error: " + String(e.message || e).slice(0, 160); }
+  try {
+    const l = await rpc("eth_getLogs", [{ address: USDT_BEP20, fromBlock: "latest", toBlock: "latest", topics: [TRANSFER] }]);
+    out.logs = "ok (" + (l || []).length + ")";
+  } catch (e) { out.logs = "error: " + String(e.message || e).slice(0, 160); }
+  return json(out);
+}
 
 /* ===================================================================== */
 async function verify(env, orderId, txIn) {
