@@ -927,3 +927,48 @@ a.sb-link:hover img { transform: scale(1.05); }
   .pr-name { grid-column: 1 / -1; }
   .pr-custom { grid-template-columns: 1fr; }
 }
+
+/* Discord */
+.discord-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; color: #8b9cff; font-weight: 600; }
+.discord-link svg { width: 16px; height: 16px; fill: currentColor; }
+.discord-link:hover { color: #a5b2ff; }
+.sw-discord { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 12px 14px; border-radius: 12px;
+  background: #5865f2; color: #fff; text-decoration: none; transition: .2s; }
+.sw-discord:hover { background: #4752c4; }
+.sw-discord > svg:first-child { width: 26px; height: 26px; fill: #fff; flex: none; }
+.sw-discord span { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.sw-discord small { opacity: .85; font-size: 12px; }
+.sw-discord .sw-arrow { width: 16px; height: 16px; fill: none; stroke: #fff; stroke-width: 2; flex: none; }
+.rev-auto { font-style: normal; color: inherit; }
+.rev-auto small { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+/* ---------- automatic crypto payment ---------- */
+.pay-exact { font-size: 12.5px; color: var(--muted); margin: 8px 2px 0; }
+.pay-exact b { color: #8ee35a; }
+.pay-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-top: 14px; }
+.pay-quick:empty { display: none; }
+.btn-wallet, .btn-card { display: flex; align-items: center; gap: 10px; justify-content: flex-start; padding: 12px 14px; border-radius: 12px;
+  font-weight: 700; font-size: 14px; color: #fff; text-decoration: none; border: 1px solid transparent; cursor: pointer; text-align: left; line-height: 1.2; }
+.btn-wallet { background: linear-gradient(135deg, #f6851b, #e2761b); }
+.btn-card { background: #fff; color: #111; border-color: #e5e7eb; }
+.btn-wallet small, .btn-card small { display: block; font-weight: 500; font-size: 11.5px; opacity: .8; margin-left: auto; }
+.btn-wallet:hover, .btn-card:hover { filter: brightness(1.06); }
+.btn-wallet:disabled { opacity: .6; cursor: wait; }
+.wl-ic { font-size: 18px; }
+.pay-note { font-size: 12px; color: var(--muted); margin: 8px 2px 0; }
+.pay-help { margin-top: 14px; background: var(--card-2); border-radius: 10px; padding: 10px 14px; font-size: 13px; }
+.pay-help summary { cursor: pointer; font-weight: 600; }
+.pay-help ol { margin: 10px 0 2px; padding-left: 20px; display: grid; gap: 6px; color: var(--muted); }
+.pay-help b { color: var(--text, #fff); }
+.pay-live { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 12px 14px; border-radius: 10px;
+  background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.3); color: #bfdbfe; font-size: 13px; }
+.pl-dot { width: 9px; height: 9px; border-radius: 50%; background: #3b82f6; flex: none; animation: plPulse 1.4s infinite; }
+@keyframes plPulse { 0% { box-shadow: 0 0 0 0 rgba(59,130,246,.6); } 70% { box-shadow: 0 0 0 9px rgba(59,130,246,0); } 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); } }
+.pay-live.pl-found { background: rgba(34,197,94,.08); border-color: rgba(34,197,94,.35); color: #bbf7d0; }
+.pay-live.pl-found .pl-dot { background: #22c55e; }
+.pay-live.pl-manual, .pay-live.pl-off { background: var(--card-2); border-color: transparent; color: var(--muted); }
+.pay-live.pl-manual .pl-dot, .pay-live.pl-off .pl-dot { background: #8b93a7; animation: none; }
+.tx-msg { font-size: 13px; margin: 8px 0 0; color: #bbf7d0; }
+.tx-msg.bad { color: #fca5a5; }
+.co-uniq { display: block; font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+.ok-txt { color: #22c55e; }

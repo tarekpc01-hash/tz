@@ -13,10 +13,12 @@ const walletReady = (m) => typeof WALLETS !== "undefined" && WALLETS[m] && !WALL
 const totalUsd = () => coItems.reduce((s, i) => s + i.pk.price * i.qty, 0);
 const round2 = (n) => Math.round(n * 100) / 100;
 
+/* every order gets its own USDT amount (total + 0.0001…0.0099) so the payment can be found automatically */
+const UNIQ = (1 + Math.floor(Math.random() * 99)) / 1e4;
 function cryptoAmount(m) {
   const t = round2(totalUsd());
   if (m === "ltc") return ltcRate ? +(t / ltcRate).toFixed(6) : null;
-  return t;   // USDT 1:1
+  return +(t + UNIQ).toFixed(4);   // USDT 1:1 + unique part
 }
 
 /* ---------- render ---------- */
@@ -81,7 +83,7 @@ function renderCheckout() {
   const m = PAY_METHODS[payMethod], amt = cryptoAmount(payMethod);
   $("#coCrypto").innerHTML = payMethod === "ltc" && amt == null
     ? (ltcErr ? `You'll pay in LTC — <button class="link-btn" id="ltcRetry">couldn't load the LTC rate, retry</button>` : "Loading LTC rate…")
-    : `You'll pay <strong>${amt} ${m.symbol}</strong> on ${m.network}`;
+    : `You'll pay <strong>${amt} ${m.symbol}</strong> on ${m.network}${payMethod.startsWith("usdt") ? `<small class="co-uniq">The extra few 0.0001s are your order's unique amount — it lets us confirm your payment automatically.</small>` : ""}`;
 }
 
 async function loadLtc() {

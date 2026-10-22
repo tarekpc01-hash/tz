@@ -23,7 +23,7 @@ function reviewsOf(g) {
 /* نص الريفيو — الريفيو التلقائي (العميل مكتبش حاجة خلال 3 أيام) بيتعلّم بوضوح */
 function revText(r) {
   return r.auto
-    ? `<p class="rev-auto">⏱ Automatic review — the buyer didn't leave feedback within ${AUTO_COMPLETE_DAYS} days.</p>`
+    ? `<p class="rev-auto">✅ Order completed successfully — delivered on time with no issues reported. <small>(Automatic 5-star rating · buyer didn't leave a comment)</small></p>`
     : `<p>${esc(r.text)}</p>`;
 }
 function avgStars(list) { return list.length ? list.reduce((s, r) => s + r.stars, 0) / list.length : 0; }
@@ -721,7 +721,8 @@ function renderSw() {
           </button>`).join("")}` : ""}
       <div class="sw-label">Choose a topic</div>
       ${SUPPORT_REASONS.map(r => `<button class="sw-reason" data-reason="${r.id}"><span>${r.icon}</span>${r.label}<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>`).join("")}
-      ${!NX.user ? `<p class="sw-note">You'll need to sign in so we can reply to you.</p>` : ""}`;
+      ${!NX.user ? `<p class="sw-note">You'll need to sign in so we can reply to you.</p>` : ""}
+      ${typeof DISCORD_URL !== "undefined" && DISCORD_URL ? `<a class="sw-discord" href="${esc(DISCORD_URL)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.6 1.3a18.4 18.4 0 0 0-5.6 0L8.6 3a19.7 19.7 0 0 0-4.9 1.5C.6 9.1-.3 13.6.1 18a19.9 19.9 0 0 0 6 3l1.3-2a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4c-.6.4-1.3.7-2 1l1.3 2a19.8 19.8 0 0 0 6-3c.5-5.1-.8-9.6-3.6-13.6zM8 15.3c-1.2 0-2.2-1.1-2.2-2.4S6.8 10.5 8 10.5s2.2 1.1 2.2 2.4-1 2.4-2.2 2.4zm8 0c-1.2 0-2.2-1.1-2.2-2.4s1-2.4 2.2-2.4 2.2 1.1 2.2 2.4-1 2.4-2.2 2.4z"/></svg><span><strong>Join our Discord</strong><small>Questions? Chat with us and the community</small></span><svg class="sw-arrow" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></a>` : ""}`;
     return;
   }
 

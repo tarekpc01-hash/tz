@@ -251,3 +251,6 @@ function timeAgo(ts) {
   return new Date(ts).toISOString().slice(0, 10);
 }
 
+
+/* (used by the automatic payment checker on the server — functions/api/verify.js) */
+try { globalThis.NX_DATA = { games, byId, pkgFor, applyPrices, DELIVERY_TIME }; } catch (e) {}

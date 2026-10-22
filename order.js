@@ -35,6 +35,7 @@ window.onAuthChange = (user) => {
     $("#odWrap").hidden = false;
     renderOrder();
     autoCompleteIfDue();
+    startWatch();
     if (location.hash === "#chat" && !window._nxChatScrolled) {
       window._nxChatScrolled = true;
       setTimeout(() => { document.querySelector(".chat").scrollIntoView({ behavior: "smooth" }); $("#chatInput").focus(); }, 300);
@@ -91,7 +92,9 @@ function renderPayBox() {
   box.hidden = false;
   if (box.dataset.for === o.id) return;   // don't wipe what the buyer is typing
   box.dataset.for = o.id;
-  const m = PAY_METHODS[o.payMethod] || {};
+  const auto = o.payMethod === "usdt_bep20";
+  const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const card = auto && typeof CARD_PAY !== "undefined" && CARD_PAY.transakApiKey && !CARD_PAY.transakApiKey.startsWith("PUT_");
   box.innerHTML = `
     <h3 class="panel-title">💳 Complete your payment</h3>
     <div class="pay-amount">
@@ -99,7 +102,18 @@ function renderPayBox() {
       <strong>${o.cryptoAmount} ${o.cryptoSymbol}</strong>
       <button class="copy-btn" data-copy="${o.cryptoAmount}">${copySvg} Copy</button>
     </div>
+    ${auto ? `<p class="pay-exact">Send this <b>exact</b> amount (with the last digits) — that's how we find and confirm your payment automatically.</p>` : ""}
     <div class="pay-warn">⚠ Network: <strong>${esc(o.payNetwork)}</strong> only. Sending on another network will lose your funds.</div>
+
+    ${auto ? `
+    <div class="pay-quick">
+      ${window.ethereum ? `<button class="btn btn-wallet" id="walletBtn"><span class="wl-ic">🦊</span> Pay with wallet <small>MetaMask · Trust Wallet</small></button>`
+        : mobile ? `<a class="btn btn-wallet" href="https://metamask.app.link/dapp/${location.host}${location.pathname}${location.search}"><span class="wl-ic">🦊</span> Pay in MetaMask</a>
+                    <a class="btn btn-wallet" href="https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodeURIComponent(location.href)}"><span class="wl-ic">🛡</span> Pay in Trust Wallet</a>` : ""}
+      ${card ? `<button class="btn btn-card" id="cardBtn"><span class="wl-ic">💳</span> Pay with Card <small>Visa · Apple Pay · Google Pay</small></button>` : ""}
+    </div>
+    ${card ? `<p class="pay-note">Card payments are handled by Transak: you buy USDT with your card and it's sent straight to us. Transak charges its own fee (about 3–5%) and asks for a one-time ID check.</p>` : ""}` : ""}
+
     <div class="pay-addr-wrap">
       <div class="qr" id="payQr"></div>
       <div class="pay-addr">
@@ -108,17 +122,118 @@ function renderPayBox() {
         <button class="copy-btn" data-copy="${esc(o.payAddress)}">${copySvg} Copy address</button>
       </div>
     </div>
+
+    ${auto ? `
+    <details class="pay-help">
+      <summary>How to pay from Binance</summary>
+      <ol>
+        <li>Open Binance → <b>Wallet</b> → <b>Withdraw</b> → <b>USDT</b>.</li>
+        <li>Paste our address and choose the network <b>BNB Smart Chain (BEP20)</b>.</li>
+        <li>Enter the amount so that <b>you receive exactly ${o.cryptoAmount} USDT</b> (Binance adds its fee on top — check the "Receive amount").</li>
+        <li>Confirm. That's it — this page updates by itself when the payment arrives.</li>
+      </ol>
+    </details>
+    <div class="pay-live" id="payLive"><span class="pl-dot"></span><span id="payLiveText">Waiting for your payment — we check the blockchain automatically.</span></div>` : ""}
+
     <form class="tx-form" id="txForm">
-      <label>After paying, paste your transaction hash (TXID)
-        <input type="text" id="txInput" maxlength="190" placeholder="e.g. 0x8f2a… or a1b2c3…" autocomplete="off" required>
+      <label>${auto ? "Paid but not detected after a few minutes? Paste your transaction hash (TXID)" : "After paying, paste your transaction hash (TXID)"}
+        <input type="text" id="txInput" maxlength="190" placeholder="e.g. 0x8f2a…" autocomplete="off" required>
       </label>
-      <button class="btn btn-primary btn-block btn-pay" type="submit">I've paid</button>
+      <p class="tx-msg" id="txMsg" hidden></p>
+      <button class="btn ${auto ? "btn-ghost" : "btn-primary"} btn-block btn-pay" type="submit">${auto ? "Check my payment" : "I've paid"}</button>
     </form>
     <button class="link-btn cancel-link" id="cancelBtn">Cancel order</button>`;
   try {
     if (window.QRCode) new QRCode($("#payQr"), { text: o.payAddress, width: 132, height: 132, colorDark: "#000", colorLight: "#fff" });
     else $("#payQr").hidden = true;
   } catch { $("#payQr").hidden = true; }
+}
+
+/* ---------- automatic payment check (server checks the blockchain) ---------- */
+let watchTimer = null, watchStarted = 0, pendingTx = "", checking = false, autoOff = false;
+function liveText(t, cls = "") {
+  const el = $("#payLive"); if (!el) return;
+  el.className = "pay-live " + cls; $("#payLiveText").textContent = t;
+}
+async function verifyNow(tx) {
+  if (checking) return null;
+  checking = true;
+  try {
+    const r = await fetch("/api/verify", { method: "POST", headers: { "content-type": "application/json" },
+                                          body: JSON.stringify({ orderId: order.id, txHash: tx || pendingTx || undefined }) });
+    if (!r.ok && r.status !== 400) throw new Error("http " + r.status);
+    return await r.json();
+  } catch (e) { return { state: "unavailable" }; }
+  finally { checking = false; }
+}
+function paidNotify(res) {
+  const k = "nx_paid_notified_" + order.id;
+  if (store(k, false)) return; save(k, true);
+  toast("✅ Payment confirmed! We're delivering your order now.");
+  NX.notifyOwner(`💰 PAID (auto-confirmed) — order #${shortId(order.id)} — $${order.total}`, {
+    Order: "#" + shortId(order.id), Customer: order.buyerEmail,
+    Amount: `${res.amount || order.cryptoAmount} USDT (BEP20) — $${order.total}`,
+    TXID: res.txHash || "", Check: "https://bscscan.com/tx/" + (res.txHash || ""),
+    Items: order.items.map(i => `${i.qty} × ${i.label} — ${i.gameName}`).join(" | "),
+    Account: (order.fields || []).map(f => `${f.label}: ${f.value}`).join(" | "),
+  });
+}
+async function tick() {
+  if (order && order.autoVerified && order.status === "processing") { paidNotify({ txHash: order.txHash, amount: order.paidAmount }); return stopWatch(); }
+  if (!order || order.payMethod !== "usdt_bep20" || !["awaiting_payment", "payment_submitted"].includes(order.status)) return stopWatch();
+  if (Date.now() - watchStarted > 3 * 3600e3) return stopWatch();
+  const res = await verifyNow();
+  if (!res) return;
+  if (res.state === "paid") { paidNotify(res); return stopWatch(); }
+  if (res.state === "manual") { liveText(res.message || "We'll check your payment by hand.", "pl-manual"); return stopWatch(); }
+  if (res.state === "unavailable") { autoOff = true; liveText("Waiting for your payment. After paying, paste your TXID below so we can confirm it.", "pl-off"); return; }
+  if (res.state === "pending") liveText(res.message || "Payment found — waiting for confirmations…", "pl-found");
+  else if (pendingTx && (res.state === "error" || res.state === "notfound")) { pendingTx = ""; txMsg(res.message, true); }
+  else if (res.state === "waiting") liveText("Waiting for your payment — we check the blockchain automatically.");
+}
+function startWatch() {
+  if (watchTimer || !order || order.payMethod !== "usdt_bep20") return;
+  if (!["awaiting_payment", "payment_submitted"].includes(order.status)) return;
+  watchStarted = Date.now();
+  tick();
+  watchTimer = setInterval(tick, 12000);
+}
+function stopWatch() { if (watchTimer) clearInterval(watchTimer); watchTimer = null; }
+function txMsg(t, bad) { const m = $("#txMsg"); if (!m) return; m.hidden = !t; m.textContent = t || ""; m.classList.toggle("bad", !!bad); }
+
+/* pay with MetaMask / Trust Wallet (browser wallet) — exact amount, no typing */
+const USDT_BSC = "0x55d398326f99059fF775485246999027B3197955";
+async function payWithWallet(btn) {
+  const eth = window.ethereum;
+  btn.disabled = true;
+  try {
+    const [from] = await eth.request({ method: "eth_requestAccounts" });
+    try { await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x38" }] }); }
+    catch (e) {
+      if (e && e.code === 4902) await eth.request({ method: "wallet_addEthereumChain", params: [{ chainId: "0x38", chainName: "BNB Smart Chain",
+        nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 }, rpcUrls: ["https://bsc-dataseed.bnbchain.org"], blockExplorerUrls: ["https://bscscan.com"] }] });
+      else throw e;
+    }
+    const amt = BigInt(Math.round(Number(order.cryptoAmount) * 1e4)) * 10n ** 14n;
+    const data = "0xa9059cbb" + order.payAddress.slice(2).toLowerCase().padStart(64, "0") + amt.toString(16).padStart(64, "0");
+    const hash = await eth.request({ method: "eth_sendTransaction", params: [{ from, to: USDT_BSC, data }] });
+    pendingTx = hash;
+    liveText("Payment sent from your wallet — confirming on the blockchain…", "pl-found");
+    startWatch(); setTimeout(tick, 4000);
+  } catch (e) {
+    console.error(e);
+    toast(e && e.code === 4001 ? "Payment cancelled in your wallet." : "Wallet payment didn't go through — you need USDT and a little BNB (for gas) on BNB Smart Chain.");
+  } finally { btn.disabled = false; }
+}
+
+function openCardPay() {
+  const p = new URLSearchParams({
+    apiKey: CARD_PAY.transakApiKey, productsAvailed: "BUY", cryptoCurrencyCode: "USDT", network: "bsc",
+    walletAddress: order.payAddress, disableWalletAddressForm: "true", cryptoAmount: String(order.cryptoAmount),
+    fiatCurrency: "USD", partnerOrderId: order.id, hideMenu: "true", redirectURL: location.href.split("#")[0],
+  });
+  window.open("https://global.transak.com/?" + p.toString(), "_blank", "noopener");
+  liveText("Finish the card payment in the Transak window — this page updates by itself when the USDT arrives.", "pl-found");
 }
 
 function renderAction() {
@@ -129,7 +244,7 @@ function renderAction() {
   const msgs = {
     payment_submitted: `<h3 class="panel-title">🔎 Verifying your payment</h3>
       <p class="panel-sub">We're checking your transaction. This usually takes a few minutes — you'll see the status change here.</p>`,
-    processing: `<h3 class="panel-title">⚡ Payment confirmed — delivering</h3>
+    processing: `<h3 class="panel-title">⚡ Payment confirmed${o.autoVerified ? " automatically" : ""} — delivering</h3>
       <p class="panel-sub">Your order is on its way. Estimated delivery: <strong>${DELIVERY_TIME}</strong>. We'll message you here if we need anything.</p>`,
     delivered: `<h3 class="panel-title">📦 Your order was delivered</h3>
       <p class="panel-sub">Please check your game account. If everything arrived, confirm below.
@@ -206,6 +321,8 @@ document.addEventListener("click", async e => {
     return;
   }
   if (e.target.closest("#reviewBtn")) { openReview(order); return; }
+  if (e.target.closest("#walletBtn")) { payWithWallet(e.target.closest("#walletBtn")); return; }
+  if (e.target.closest("#cardBtn")) { openCardPay(); return; }
   if (e.target.closest("#disputeBtn")) { disputeFormOpen = true; renderAction(); $("#disputeText").focus(); return; }
   if (e.target.closest("#disputeCancel")) { disputeFormOpen = false; renderAction(); return; }
   if (e.target.closest("#cancelBtn")) {
@@ -245,7 +362,18 @@ document.addEventListener("submit", async e => {
   e.preventDefault();
   const tx = $("#txInput").value.trim();
   if (tx.length < 12 || /\s/.test(tx)) return toast("That doesn't look like a transaction hash.");
-  const btn = e.target.querySelector("button"); btn.disabled = true; btn.textContent = "Sending…";
+  const btn = e.target.querySelector("button"), label = btn.textContent;
+  btn.disabled = true; btn.textContent = "Checking…"; txMsg("");
+
+  /* 1) automatic check on the blockchain */
+  const res = order.payMethod === "usdt_bep20" ? await verifyNow(tx) : { state: "unavailable" };
+  if (res && res.state === "paid") { paidNotify(res); btn.disabled = false; btn.textContent = label; return; }
+  if (res && res.state === "manual") { txMsg(res.message); stopWatch(); btn.disabled = false; btn.textContent = label; return; }
+  if (res && res.state === "pending") { pendingTx = tx; txMsg(res.message || "Found it — waiting for confirmations…"); startWatch(); btn.disabled = false; btn.textContent = label; return; }
+  if (res && (res.state === "error" || res.state === "notfound")) { txMsg(res.message, true); btn.disabled = false; btn.textContent = label; return; }
+  if (res && res.state !== "unavailable") { pendingTx = tx; txMsg("Checking your transaction…"); startWatch(); btn.disabled = false; btn.textContent = label; return; }
+
+  /* 2) automatic check not available → send it to the admin to check by hand (as before) */
   try {
     await NX.submitPayment(order.id, tx);
     NX.notifyOwner(`💰 Payment sent for order #${shortId(order.id)}`, {
@@ -258,7 +386,7 @@ document.addEventListener("submit", async e => {
     toast("✅ Thanks! We're verifying your payment.");
   } catch (err) {
     console.error(err); toast("Couldn't submit — try again.");
-    btn.disabled = false; btn.textContent = "I've paid";
+    btn.disabled = false; btn.textContent = label;
   }
 });
 

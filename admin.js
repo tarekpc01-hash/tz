@@ -56,12 +56,15 @@ NX.onAuth(user => {
     const before = new Map(all.map(o => [o.id, o]));
     const fresh = all.length && list.filter(o => !before.has(o.id));
     const newDisputes = all.length && list.filter(o => o.status === "disputed" && (before.get(o.id) || {}).status !== "disputed");
+    const autoPaid = all.length && list.filter(o => o.autoVerified && o.status === "processing" && !(before.get(o.id) || {}).autoVerified);
+    if (autoPaid && autoPaid.length) toast(`💰 Payment confirmed automatically on #${shortId(autoPaid[0].id)} — deliver it!`);
     all = list;
     if (fresh && fresh.length) toast(`🛒 ${fresh.length} new order${fresh.length > 1 ? "s" : ""}!`);
     if (newDisputes && newDisputes.length) toast(`⚠ New dispute on #${shortId(newDisputes[0].id)}!`);
     render();
     autoComplete();
     syncStats();
+    checkOpenPayments();
   }, err => {
     show("#admDenied");
     $("#admDeniedTitle").textContent = "Can't read orders";
@@ -229,7 +232,9 @@ function renderDetail() {
       <div><span>TXID</span><strong>${o.txHash
         ? `<a class="tx-link" href="${m.explorer || "#"}${encodeURIComponent(o.txHash)}" target="_blank" rel="noopener">${esc(o.txHash.slice(0, 14))}… ↗</a>`
         : "—"}</strong></div>
+      ${o.autoVerified && ["processing", "delivered", "completed", "disputed"].includes(o.status) ? `<div><span>Verified</span><strong class="ok-txt">✅ Automatically on the blockchain${o.paidAmount ? ` — received ${esc(o.paidAmount)} USDT` : ""}</strong></div>` : ""}
     </div>
+    ${o.verifyNote && !o.autoVerified ? `<div class="pay-warn">🔎 Auto-check: ${esc(o.verifyNote)}</div>` : ""}
     ${o.txHash ? `<p class="panel-sub">Open the TXID and check: the network, the receiving address, and the amount.</p>` : ""}
 
     <h4 class="adm-h">Chat</h4>
@@ -261,6 +266,20 @@ function select(id) {
   render();
   if (window.innerWidth < 980) $("#admDetail").scrollIntoView({ behavior: "smooth" });
 }
+
+/* ask the server to check the blockchain for open orders (in case the buyer closed the page) */
+let lastPayCheck = 0;
+async function checkOpenPayments() {
+  if (Date.now() - lastPayCheck < 90e3) return;
+  lastPayCheck = Date.now();
+  const open = all.filter(o => o.payMethod === "usdt_bep20" && Date.now() - o.createdAt < 2 * 864e5
+    && (o.status === "awaiting_payment" || (o.status === "payment_submitted" && !o.verifyNote)));
+  for (const o of open) {
+    try { await fetch("/api/verify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ orderId: o.id }) }); }
+    catch (e) { break; }
+  }
+}
+setInterval(() => { if (all.length) checkOpenPayments(); }, 120e3);
 
 /* auto-complete orders delivered more than AUTO_COMPLETE_DAYS ago */
 let autoRan = false;
@@ -299,7 +318,7 @@ $("#admDetail").addEventListener("click", async e => {
     if (act === "reject") {
       const why = prompt("What's wrong with the payment? (the customer will see this)", "We couldn't find your payment on the blockchain. Please check the TXID and network.");
       if (why === null) { b.disabled = false; return; }
-      await NX.updateOrder(o.id, { status: "awaiting_payment", txHash: "", rejectedAt: Date.now() });
+      await NX.updateOrder(o.id, { status: "awaiting_payment", txHash: "", verifyNote: "", rejectedAt: Date.now() });
       await NX.sendMessage(o.id, `⚠ ${why}`, "admin");
     }
     if (act === "deliver") {

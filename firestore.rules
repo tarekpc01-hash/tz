@@ -37,7 +37,9 @@ service cloud.firestore {
         && request.resource.data.status == 'awaiting_payment'
         && request.resource.data.items is list
         && request.resource.data.items.size() > 0
-        && request.resource.data.items.size() <= 30;
+        && request.resource.data.items.size() <= 30
+        // payment fields are written only by the automatic checker / admin
+        && !request.resource.data.keys().hasAny(['autoVerified', 'paidAmount', 'verifyNote', 'scanBlock', 'paidAt', 'txHash']);
 
       // admin can update anything - buyer can only do these steps:
       //   awaiting_payment -> payment_submitted (adds TX hash)
@@ -131,6 +133,12 @@ service cloud.firestore {
     match /config/{doc} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // ---------- used blockchain transactions (written only by the server checker) ----------
+    match /payments/{tx} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     // ---------- public store stats (orders count) ----------

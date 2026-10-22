@@ -24,5 +24,18 @@ const WALLETS = {
   ltc:        "PUT_YOUR_LTC_ADDRESS",          // مقفولة حالياً
 };
 
+/* 3b) الدفع بالفيزا / Apple Pay / Google Pay — عن طريق Transak
+       العميل بيشتري USDT بالكارت (هو اللي بيدفع رسومهم ~3-5%) والـ USDT بيوصل محفظتك BEP20 على طول.
+       سجّل في https://transak.com (Partner / Business) وحط الـ API Key هنا — الزرار مش هيظهر لحد ما تحطه */
+const CARD_PAY = {
+  transakApiKey: "PUT_YOUR_TRANSAK_API_KEY",
+};
+
 /* 4) الإيميل اللي توصله إشعارات الأوردرات الجديدة (عن طريق FormSubmit) */
 const NOTIFY_EMAIL = "nilorixstore@gmail.com";
+
+/* جروب الديسكورد — بيظهر في الفوتر وفي شات الدعم */
+const DISCORD_URL = "https://discord.gg/pmzKfQuE5";
+
+/* (used by the automatic payment checker on the server — functions/api/verify.js) */
+try { globalThis.NX_CONFIG = { FIREBASE_CONFIG, WALLETS }; } catch (e) {}

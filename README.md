@@ -92,3 +92,27 @@ images/         اللوجو وصور الألعاب
 ## ℹ️ حدود الخطة المجانية
 Firebase المجاني (Spark) بيكفي لحد حوالي 50 ألف قراءة في اليوم — كفاية جداً لبداية المتجر.
 FormSubmit مجاني ومش محتاج حساب.
+
+---
+
+## 🤖 تأكيد الدفع الأوتوماتيك (USDT BEP20) — 0 fees
+
+- كل أوردر بياخد **مبلغ مميز** (زي `12.0037 USDT`)، والسيرفر بيكشف على البلوكتشين وأول ما المبلغ يوصل محفظتك الأوردر بيتحول **Processing** لوحده.
+- الكود في `functions/api/verify.js` (بيشتغل على Cloudflare Pages Functions ببلاش).
+- **مش بيأكد أي أوردر إلا لو:** العملية USDT الرسمي، رايحة لمحفظتك، المبلغ صح، العملية ناجحة، أحدث من الأوردر، ومتستخدمتش قبل كده، والسعر مطابق لقايمة الأسعار.
+- أي حالة مش واضحة → الأوردر بيروح **Payment sent — verifying** وانت تراجعه بإيدك، ومكتوب جنبه السبب.
+
+### الإعداد (مرة واحدة)
+1. Firebase Console ← ⚙ **Project settings** ← **Service accounts** ← **Generate new private key** ← هينزل ملف JSON.
+   ⚠ الملف ده سري جداً — متبعتهوش لحد ومترفعهوش على GitHub.
+2. Cloudflare ← Workers & Pages ← مشروع الموقع ← **Settings** ← **Variables and Secrets** ← **Add**:
+   - Type: **Secret** · Name: `FIREBASE_SA` · Value: الصق محتوى ملف الـ JSON كله.
+3. اعمل **Retry deployment** (أو ارفع أي تعديل على GitHub).
+4. اختبار: افتح `https://nilorix.com/api/verify` — لازم يظهر `{"ok":true,...}`.
+
+لو الخطوات دي متعملتش، الموقع بيشتغل عادي زي الأول (العميل يحط الـ TX وانت تأكد بإيدك).
+
+## 💳 الدفع بالفيزا / Apple Pay / Google Pay (Transak)
+- سجّل حساب Partner في https://transak.com وخد الـ **API Key**.
+- حطه في `config.js` في `CARD_PAY.transakApiKey` — زرار **Pay with Card** هيظهر لوحده.
+- العميل بيدفع رسوم Transak (حوالي 3–5%) وبيعمل توثيق مرة واحدة، والـ USDT بيوصل محفظتك BEP20.
