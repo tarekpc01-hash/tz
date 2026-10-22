@@ -286,7 +286,7 @@ function renderAction() {
       <button class="btn btn-ghost btn-block" id="receivedBtn" style="margin-top:14px">✓ I received it now — close dispute</button>`,
     completed: `<h3 class="panel-title">✅ Order completed</h3>
       <p class="panel-sub">Thanks for shopping with Nilorix!</p>
-      ${reviewed ? `<p class="panel-sub">⭐ You reviewed this order.</p>` : `<button class="btn btn-ghost" id="reviewBtn">⭐ Leave a review</button>`}`,
+      ${o.reviewDeleted ? "" : reviewed ? `<p class="panel-sub">⭐ You reviewed this order.</p>` : `<button class="btn btn-ghost" id="reviewBtn">⭐ Leave a review</button>`}`,
   };
   box.hidden = !msgs[o.status];
   box.innerHTML = msgs[o.status] || "";

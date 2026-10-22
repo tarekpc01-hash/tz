@@ -173,6 +173,23 @@ const NX = (() => {
       return s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
     } catch (e) { console.error(e); return []; }
   }
+  /* admin only: deleted reviews are moved to "deletedReviews" (hidden from the site, kept for the admin) */
+  async function deleteReview(r) {
+    const { id, ...data } = r;
+    await db.collection("deletedReviews").doc(id).set({ ...data, deletedAt: Date.now() });
+    await db.collection("reviews").doc(id).delete();
+  }
+  async function restoreReview(r) {
+    const { id, deletedAt, ...data } = r;
+    await db.collection("reviews").doc(id).set(data);
+    await db.collection("deletedReviews").doc(id).delete();
+  }
+  async function loadDeletedReviews() {
+    try {
+      const s = await db.collection("deletedReviews").limit(1000).get();
+      return s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0));
+    } catch (e) { console.error(e); return []; }
+  }
   const addReview = (orderId, r) => db.collection("reviews").doc(orderId).set({ ...r, uid: user.uid, auto: false, createdAt: Date.now() });
   /* admin only: 5★ automatic review for an order the buyer didn't review within AUTO_COMPLETE_DAYS */
   const addAutoReview = (o) => db.collection("reviews").doc(o.id).set({
@@ -228,6 +245,6 @@ const NX = (() => {
     enabled, onAuth, get user() { return user; }, get profile() { return profile; }, isAdmin, isAdminEmail, sendVerification, reloadUser,
     errText, signUp, signIn, signInGoogle, resetPassword, signOut, saveProfile,
     createOrder, watchMyOrders, watchOrder, updateOrder, submitPayment, cancelOrder, markReceived, openDispute,
-    watchMessages, sendMessage, createTicket, watchMyTickets, watchAllTickets, watchTicketMessages, sendTicketMessage, setTicketStatus, loadReviews, addReview, addAutoReview, loadSales, addSales, setStats, loadPrices, savePrices, watchAllOrders, notifyOwner,
+    watchMessages, sendMessage, createTicket, watchMyTickets, watchAllTickets, watchTicketMessages, sendTicketMessage, setTicketStatus, loadReviews, addReview, deleteReview, restoreReview, loadDeletedReviews, addAutoReview, loadSales, addSales, setStats, loadPrices, savePrices, watchAllOrders, notifyOwner,
   };
 })();

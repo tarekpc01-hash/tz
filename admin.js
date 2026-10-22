@@ -93,7 +93,7 @@ const COUNTED = ["processing", "delivered", "disputed", "completed"];
 let lastStats = "";
 async function syncStats() {
   const stats = { _orders: 0 };
-  all.filter(o => COUNTED.includes(o.status)).forEach(o => {
+  all.filter(o => COUNTED.includes(o.status) && !o.hideFromStats).forEach(o => {
     stats._orders++;
     o.items.forEach(i => { stats[i.gid] = (stats[i.gid] || 0) + (i.qty || 1); });
   });
@@ -237,6 +237,13 @@ function renderDetail() {
     ${o.verifyNote && !o.autoVerified ? `<div class="pay-warn">🔎 Auto-check: ${esc(o.verifyNote)}</div>` : ""}
     ${o.txHash ? `<p class="panel-sub">Open the TXID and check: the network, the receiving address, and the amount.</p>` : ""}
 
+    <h4 class="adm-h">Store page</h4>
+    <div class="rv-flags">
+      <span>${COUNTED.includes(o.status) ? (o.hideFromStats ? "🚫 Not counted in the store's order count" : "✅ Counted in the store's order count") : "— Not counted (not paid)"}</span>
+      ${COUNTED.includes(o.status) ? `<button class="btn btn-ghost btn-sm" data-act="togglestats">${o.hideFromStats ? "Count it again" : "Remove from count"}</button>` : ""}
+      ${o.reviewDeleted ? `<span class="muted-inline">⭐ Review deleted by admin</span>` : ""}
+    </div>
+
     <h4 class="adm-h">Chat</h4>
     <div class="chat-list adm-chat" id="admChat"></div>
     <form class="chat-form" id="admChatForm">
@@ -281,6 +288,87 @@ async function checkOpenPayments() {
 }
 setInterval(() => { if (all.length) checkOpenPayments(); }, 120e3);
 
+/* ---------- Reviews manager: delete a review (and optionally the order from the store count) ---------- */
+let adminReviews = [], deletedReviews = [], rvTab = "all";
+async function loadAdminReviews() {
+  $("#rvList").innerHTML = `<p class="panel-sub">Loading…</p>`;
+  [adminReviews, deletedReviews] = await Promise.all([NX.loadReviews(), NX.loadDeletedReviews()]);
+  renderAdminReviews();
+}
+const rvDate = (t) => t ? new Date(t).toISOString().slice(0, 10) : "";
+function renderAdminReviews() {
+  const T = [["all", "All", () => true], ["real", "Written by customers", r => !r.auto], ["auto", "Automatic", r => r.auto],
+             ["low", "3★ or less", r => r.stars <= 3], ["deleted", "🗑 Deleted", null]];
+  $("#admViewReviews").textContent = adminReviews.length || "";
+  $("#rvTabs").innerHTML = T.map(([k, l, f]) => `<button class="filter ${k === rvTab ? "active" : ""} ${k === "deleted" ? "rv-del-tab" : ""}" data-rv="${k}">${l} <b>${f ? adminReviews.filter(f).length : deletedReviews.length}</b></button>`).join("");
+  const del = rvTab === "deleted";
+  const list = del ? deletedReviews : adminReviews.filter(T.find(x => x[0] === rvTab)[2]);
+  $("#rvList").innerHTML = list.length ? list.map(r => {
+    const o = all.find(x => x.id === r.id);
+    return `
+    <div class="panel rv-card ${del ? "rv-deleted" : ""}">
+      <div class="rv-top">
+        <strong>${esc(r.name || "Customer")}</strong>
+        <span class="rv-stars">${"★".repeat(r.stars)}<i>${"★".repeat(5 - r.stars)}</i></span>
+        <small>${rvDate(r.createdAt)}</small>
+        ${r.auto ? `<span class="rv-badge">Automatic</span>` : ""}
+        ${del ? `<span class="rv-badge rv-badge-del">Deleted ${rvDate(r.deletedAt)}</span>` : ""}
+      </div>
+      <p class="rv-text">${r.auto ? "<em>Automatic 5-star rating (no comment)</em>" : esc(r.text || "")}</p>
+      <small class="muted-inline">${esc(r.item || "")} · Order <a href="#" data-openorder="${r.id}">#${shortId(r.id)}</a>${o && o.hideFromStats ? " · 🚫 not counted in store orders" : o ? " · ✅ counted in store orders" : ""}</small>
+      <div class="rv-actions">${del
+        ? `<button class="btn btn-ghost btn-sm" data-restorerev="${r.id}">↩ Restore review</button>`
+        : `<button class="btn btn-danger btn-sm" data-delrev="${r.id}">🗑 Delete review</button>`}</div>
+    </div>`;
+  }).join("") : `<p class="panel-sub">${del ? "No deleted reviews." : "No reviews here."}</p>`;
+}
+document.addEventListener("click", async e => {
+  const t = e.target.closest("[data-rv]");
+  if (t) { rvTab = t.dataset.rv; renderAdminReviews(); return; }
+  const op = e.target.closest("[data-openorder]");
+  if (op) {
+    e.preventDefault();
+    $$(".adm-view").forEach(x => { if (x.dataset.view === "orders") x.click(); });
+    tab = "all"; render(); select(op.dataset.openorder); return;
+  }
+
+  /* delete → moved to the "Deleted" list (gone from the site) */
+  const d = e.target.closest("[data-delrev]");
+  if (d) {
+    const r = adminReviews.find(x => x.id === d.dataset.delrev), o = all.find(x => x.id === r.id);
+    if (!confirm("Delete this review? It will disappear from the store page and the game page (you can still find it under \"Deleted\").")) return;
+    const alsoCount = o && COUNTED.includes(o.status) && !o.hideFromStats
+      && confirm("Also remove this order from the store's order count?\n\nOK = remove it from the count\nCancel = keep counting it");
+    d.disabled = true;
+    try {
+      await NX.deleteReview(r);
+      if (o) await NX.updateOrder(r.id, alsoCount ? { reviewDeleted: true, hideFromStats: true } : { reviewDeleted: true });
+      adminReviews = adminReviews.filter(x => x.id !== r.id);
+      deletedReviews.unshift({ ...r, deletedAt: Date.now() });
+      renderAdminReviews();
+      toast(alsoCount ? "🗑 Review deleted and order removed from the count" : "🗑 Review deleted");
+    } catch (err) { console.error(err); toast("Couldn't delete — check that the latest firestore rules are published."); d.disabled = false; }
+    return;
+  }
+
+  /* restore → back on the site */
+  const rs = e.target.closest("[data-restorerev]");
+  if (rs) {
+    const r = deletedReviews.find(x => x.id === rs.dataset.restorerev), o = all.find(x => x.id === r.id);
+    if (!confirm("Restore this review? It will show on the site again.")) return;
+    const countAgain = o && o.hideFromStats && confirm("Count this order in the store's order count again?");
+    rs.disabled = true;
+    try {
+      await NX.restoreReview(r);
+      if (o) await NX.updateOrder(r.id, countAgain ? { reviewDeleted: false, hideFromStats: false } : { reviewDeleted: false });
+      deletedReviews = deletedReviews.filter(x => x.id !== r.id);
+      const { deletedAt, ...back } = r; adminReviews.unshift(back);
+      renderAdminReviews();
+      toast("↩ Review restored");
+    } catch (err) { console.error(err); toast("Couldn't restore — check that the latest firestore rules are published."); rs.disabled = false; }
+  }
+});
+
 /* auto-complete orders delivered more than AUTO_COMPLETE_DAYS ago */
 let autoRan = false;
 async function autoComplete() {
@@ -291,7 +379,7 @@ async function autoComplete() {
   /* بعد AUTO_COMPLETE_DAYS من التسليم: أي أوردر مكتمل العميل معملوش ريفيو بياخد ريفيو تلقائي 5 نجوم */
   try {
     const reviewed = new Set((await NX.loadReviews()).map(r => r.id));
-    const noReview = all.filter(o => o.status === "completed" && o.deliveredAt && !reviewed.has(o.id)
+    const noReview = all.filter(o => o.status === "completed" && o.deliveredAt && !reviewed.has(o.id) && !o.reviewDeleted
                                   && Date.now() - o.deliveredAt > AUTO_COMPLETE_DAYS * 864e5);
     for (const o of noReview) { try { await NX.addAutoReview(o); } catch (e) { console.error(e); } }
   } catch (e) { console.error(e); }
@@ -311,6 +399,10 @@ $("#admDetail").addEventListener("click", async e => {
   const act = b.dataset.act;
   b.disabled = true;
   try {
+    if (act === "togglestats") {
+      await NX.updateOrder(o.id, { hideFromStats: !o.hideFromStats });
+      toast(o.hideFromStats ? "✅ Order counted again" : "🚫 Order removed from the store's count");
+    }
     if (act === "paid" || act === "confirm") {
       await NX.updateOrder(o.id, { status: "processing", confirmedAt: Date.now() });
       await NX.sendMessage(o.id, `✅ Payment confirmed! Your order is being delivered now (about ${DELIVERY_TIME}).`, "admin");
@@ -380,7 +472,9 @@ $$(".adm-view").forEach(b => b.addEventListener("click", () => {
   $("#admOrders").hidden = b.dataset.view !== "orders";
   $("#admSupport").hidden = b.dataset.view !== "support";
   $("#admPrices").hidden = b.dataset.view !== "prices";
+  $("#admReviews").hidden = b.dataset.view !== "reviews";
   if (b.dataset.view === "prices") renderPrices();
+  if (b.dataset.view === "reviews") loadAdminReviews();
 }));
 
 function renderSupport() {

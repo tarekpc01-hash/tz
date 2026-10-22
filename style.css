@@ -976,3 +976,18 @@ a.sb-link:hover img { transform: scale(1.05); }
 .co-card-note { display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; padding: 12px 14px; border-radius: 12px;
   background: rgba(255,255,255,.04); border: 1px dashed rgba(255,255,255,.18); font-size: 13.5px; }
 .co-card-note small { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
+/* admin: reviews manager */
+.rv-list { display: grid; gap: 12px; }
+.rv-card { padding: 16px; }
+.rv-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rv-stars { color: #facc15; letter-spacing: 1px; }
+.rv-stars i { color: #3a3a4d; font-style: normal; }
+.rv-badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.08); color: var(--muted); }
+.rv-text { margin: 8px 0 6px; }
+.rv-actions { margin-top: 10px; }
+.rv-flags { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+.btn-sm { padding: 6px 12px; font-size: 12.5px; border-radius: 8px; }
+.rv-del-tab { border-color: rgba(239,68,68,.45) !important; }
+.rv-del-tab.active { background: #ef4444 !important; color: #fff !important; }
+.rv-deleted { opacity: .8; border-color: rgba(239,68,68,.35); }
+.rv-badge-del { background: rgba(239,68,68,.15); color: #fca5a5; }
