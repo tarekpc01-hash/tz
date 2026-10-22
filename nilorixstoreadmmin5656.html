@@ -10,7 +10,7 @@
   <meta name="robots" content="noindex">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261023a">
+  <link rel="stylesheet" href="style.css?v=20261023b">
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48">
   <link rel="icon" href="/favicon-96.png" type="image/png" sizes="96x96">
@@ -35,7 +35,7 @@
       </div>
     </div>
   </header>
-  <script src="logo.js?v=20261023a"></script>
+  <script src="logo.js?v=20261023b"></script>
 
   <!-- not signed in -->
   <main class="container page" id="admLogin" hidden>
@@ -65,9 +65,22 @@
       <button class="adm-view" data-view="support">💬 Support <b id="admViewSupport"></b></button>
       <button class="adm-view" data-view="prices">💲 Prices</button>
       <button class="adm-view" data-view="reviews">⭐ Reviews <b id="admViewReviews"></b></button>
+      <button class="adm-view" data-view="customers">🧑 Customers <b id="admViewCust"></b></button>
       <button class="adm-view" data-view="team">👥 Team</button>
       <button class="adm-view" data-view="activity">📜 Activity</button>
       <span class="adm-role" id="admRole"></span>
+    </div>
+
+    <!-- CUSTOMERS (owners only) -->
+    <div id="admCustomers" hidden>
+      <div class="adm-bar">
+        <div class="filters" id="cuTabs"></div>
+        <input class="adm-search" id="cuSearch" placeholder="Search name, email, game account…" autocomplete="off">
+      </div>
+      <div class="adm-grid">
+        <div class="adm-list" id="cuList"></div>
+        <aside class="adm-detail panel" id="cuDetail"><p class="panel-sub">Select a customer.</p></aside>
+      </div>
     </div>
 
     <!-- TEAM (owners only) -->
@@ -149,10 +162,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="config.js?v=20261023a"></script>
-  <script src="assets.js?v=20261023a"></script>
-  <script src="data.js?v=20261023a"></script>
-  <script src="backend.js?v=20261023a"></script>
-  <script src="admin.js?v=20261023a"></script>
+  <script src="config.js?v=20261023b"></script>
+  <script src="assets.js?v=20261023b"></script>
+  <script src="data.js?v=20261023b"></script>
+  <script src="backend.js?v=20261023b"></script>
+  <script src="admin.js?v=20261023b"></script>
 </body>
 </html>

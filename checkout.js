@@ -128,6 +128,7 @@ $("#placeBtn").addEventListener("click", async () => {
   if (coItems.some(i => !pkgFor(i.g, i.p, i.amt))) return coError("One of the packages isn't available anymore — please go back and pick again.");
   coItems.forEach(i => { i.pk = pkgFor(i.g, i.p, i.amt); });
   await requireLogin("Sign in or create an account to place your order.");
+  if (await NX.amIBlocked()) return coError("Your account can't place new orders. Please contact support.");
 
   const btn = $("#placeBtn"); btn.disabled = true; btn.textContent = "Placing order…";
   try {
@@ -144,6 +145,7 @@ $("#placeBtn").addEventListener("click", async () => {
                  optLabel: optLabel(i.g, i.opt) || "", qty: i.qty, price: pk.price, amount: pk.amount || null };
       }),
       fields: inputs.map(i => ({ gid: i.dataset.gid, gameName: byId(i.dataset.gid).name, label: i.dataset.label, value: i.value.trim() })),
+      accountKeys: [...new Set(inputs.map(i => accountKey(i.dataset.gid, i.value)))],
       total: round2(totalUsd()),
       payMethod, payNetwork: m.network, cryptoSymbol: m.symbol, cryptoAmount: amt,
       payAddress: WALLETS[payMethod],
@@ -165,7 +167,7 @@ $("#placeBtn").addEventListener("click", async () => {
     location.href = `order.html?id=${id}`;
   } catch (err) {
     console.error(err);
-    coError("Couldn't place the order — please try again.");
+    coError(/permission/i.test(String(err && (err.code || err.message))) ? "This order can't be placed. Please contact support." : "Couldn't place the order — please try again.");
     btn.disabled = false; btn.textContent = "Place order";
   }
 });

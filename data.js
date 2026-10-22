@@ -201,6 +201,8 @@ function asset(p) {
   try { return (p && typeof ASSETS !== "undefined" && ASSETS && ASSETS[p]) || p; } catch (e) { return p; }
 }
 const byId = (id) => games.find(g => g.id === id);
+/* game account fingerprint (used to block an account): "robux:teko23543" */
+const accountKey = (gid, value) => `${gid}:${String(value || "").trim().toLowerCase().replace(/\s+/g, "")}`;
 /* كمية حرّة (Robux): السعر = الكمية × perUnit، متقرّب لأقرب سنت */
 const customPrice = (g, amt) => Math.round(amt * g.custom.perUnit * 100) / 100;
 const validAmt = (g, amt) => g.custom && Number.isInteger(amt) && amt >= g.custom.min && amt <= g.custom.max;

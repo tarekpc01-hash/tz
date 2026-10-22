@@ -54,7 +54,7 @@ NX.onAuth(user => {
   try { const k = "nx_admin_login_" + user.email; if (!sessionStorage.getItem(k)) { sessionStorage.setItem(k, "1"); NX.logActivity("admin.login", {}); } } catch {}
   if (NX.can("support")) startSupport();
   loadPriceOverrides();
-  if (NX.isOwner()) startTeam();
+  if (NX.isOwner()) { startTeam(); startCustomers(); }
   if (!(NX.can("orders") || NX.can("payments") || NX.can("reviews"))) return;
   stopAll = NX.watchAllOrders(list => {
     const before = new Map(all.map(o => [o.id, o]));
@@ -66,6 +66,7 @@ NX.onAuth(user => {
     if (fresh && fresh.length) toast(`🛒 ${fresh.length} new order${fresh.length > 1 ? "s" : ""}!`);
     if (newDisputes && newDisputes.length) toast(`⚠ New dispute on #${shortId(newDisputes[0].id)}!`);
     render();
+    if (custStarted) renderCustomers();
     if (NX.can("orders") || NX.can("payments")) { autoComplete(); syncStats(); }
     if (NX.can("payments")) checkOpenPayments();
   }, err => {
@@ -206,6 +207,7 @@ function renderDetail() {
       <div><h3>Order #${shortId(o.id)}</h3><small class="muted-inline">${new Date(o.createdAt).toLocaleString()}</small></div>
       ${pill(o.status)}
     </div>
+    ${blockWarn(o)}
     ${o.status === "disputed" ? `<div class="dispute-box adm"><span>⚠ Customer dispute · ${timeAgo(o.disputedAt || o.updatedAt)}</span><p>${esc(o.disputeReason || "")}</p></div>` : ""}
     <div class="adm-actions">${actions[o.status] || ""}</div>
 
@@ -380,6 +382,155 @@ document.addEventListener("click", async e => {
   }
 });
 
+/* ---------- 🧑 Customers + blocking (owners only) ---------- */
+const PAID_ST = ["processing", "delivered", "disputed", "completed"];
+let users = [], blocked = [], custStarted = false, cuTab = "all", cuQ = "", cuSel = null, cuNote = { uid: null, text: "" };
+const blockedRec = (uid) => blocked.find(b => b.id === "uid_" + uid);
+const blockedKeys = () => new Set(((blocked.find(b => b.id === "accounts") || {}).keys) || []);
+const orderKeys = (o) => o.accountKeys || (o.fields || []).map(f => accountKey(f.gid, f.value));
+function blockWarn(o) {
+  if (!NX.isOwner() || !custStarted) return "";
+  const bk = blockedKeys(), hit = orderKeys(o).filter(k => bk.has(k));
+  if (blockedRec(o.uid)) return `<div class="pay-warn">🚫 This customer is <b>blocked</b>. Check before delivering.</div>`;
+  if (hit.length) return `<div class="pay-warn">🚫 Blocked game account: <b>${esc(hit.join(", "))}</b>. Check before delivering.</div>`;
+  return "";
+}
+function startCustomers() {
+  if (custStarted) return renderCustomers();
+  custStarted = true;
+  NX.loadUsers().then(u => { users = u; renderCustomers(); });
+  NX.watchBlocked(b => { blocked = b; renderCustomers(); if (selId) renderDetail(); });
+}
+function customerList() {
+  const map = new Map();
+  users.forEach(u => map.set(u.uid, { uid: u.uid, name: u.name || "", email: u.email || "", photo: u.photo || "", joined: u.createdAt || 0, orders: [] }));
+  all.forEach(o => {
+    if (!map.has(o.uid)) map.set(o.uid, { uid: o.uid, name: o.buyerName || "", email: o.buyerEmail || "", photo: "", joined: 0, orders: [] });
+    const c = map.get(o.uid); c.orders.push(o);
+    if (!c.name && o.buyerName) c.name = o.buyerName; if (!c.email && o.buyerEmail) c.email = o.buyerEmail;
+  });
+  /* who else used the same game account? */
+  const keyOwners = new Map();
+  all.forEach(o => orderKeys(o).forEach(k => { if (!keyOwners.has(k)) keyOwners.set(k, new Set()); keyOwners.get(k).add(o.uid); }));
+  const day = 864e5, now = Date.now();
+  const owners = ADMIN_EMAILS.map(e => e.toLowerCase());
+  return [...map.values()].filter(c => !owners.includes((c.email || "").toLowerCase())).map(c => {
+    const paid = c.orders.filter(o => PAID_ST.includes(o.status));
+    c.paidTotal = paid.reduce((s, o) => s + (Number(o.total) || 0), 0);
+    c.paidCount = paid.length;
+    c.completed = c.orders.filter(o => o.status === "completed").length;
+    c.cancelled = c.orders.filter(o => o.status === "cancelled").length;
+    c.unpaid = c.orders.filter(o => o.status === "awaiting_payment").length;
+    c.disputes = c.orders.filter(o => o.disputedAt || o.status === "disputed").length;
+    c.rejected = c.orders.filter(o => o.rejectedAt).length;
+    c.first = c.orders.length ? Math.min(...c.orders.map(o => o.createdAt)) : 0;
+    c.last = c.orders.length ? Math.max(...c.orders.map(o => o.createdAt)) : 0;
+    c.keys = [...new Set(c.orders.flatMap(orderKeys))];
+    c.shared = c.keys.filter(k => (keyOwners.get(k) || new Set()).size > 1);
+    c.blocked = blockedRec(c.uid);
+    const flags = [];
+    if (c.disputes) flags.push(`⚠️ ${c.disputes} dispute${c.disputes > 1 ? "s" : ""}`);
+    if (c.rejected >= 2) flags.push(`⚠️ ${c.rejected} rejected payments`);
+    if (c.unpaid + c.cancelled >= 3) flags.push(`⚠️ ${c.unpaid + c.cancelled} unpaid/cancelled`);
+    if (c.orders.filter(o => now - o.createdAt < day).length >= 5) flags.push("⚠️ 5+ orders in 24h");
+    if (c.first && now - c.first < day && c.paidTotal >= 100) flags.push("⚠️ New & big spender");
+    if (c.shared.length) flags.push("⚠️ Game account used by another customer");
+    if (c.orders.some(o => { const e = expectedTotal(o); return e != null && Math.abs(e - o.total) > 0.01; })) flags.push("⚠️ Price mismatch");
+    c.flags = flags;
+    return c;
+  });
+}
+function renderCustomers() {
+  if (!custStarted) return;
+  const list0 = customerList();
+  const T = [["all", "All", () => true], ["buyers", "Buyers", c => c.paidCount > 0], ["flag", "⚠️ Flagged", c => c.flags.length && !c.blocked],
+             ["top", "💰 Top spenders", c => c.paidTotal > 0], ["blocked", "🚫 Blocked", c => !!c.blocked]];
+  const nFlag = list0.filter(c => c.flags.length && !c.blocked).length;
+  $("#admViewCust").textContent = nFlag || ""; $("#admViewCust").classList.toggle("hot", nFlag > 0);
+  $("#cuTabs").innerHTML = T.map(([k, l, f]) => `<button class="filter ${k === cuTab ? "active" : ""}" data-cu="${k}">${l} <b>${list0.filter(f).length}</b></button>`).join("");
+  const q = cuQ.toLowerCase();
+  let list = list0.filter(T.find(x => x[0] === cuTab)[2])
+    .filter(c => !q || [c.name, c.email, c.uid, ...c.keys].join(" ").toLowerCase().includes(q));
+  list.sort(cuTab === "top" ? (a, b) => b.paidTotal - a.paidTotal : (a, b) => (b.last || b.joined) - (a.last || a.joined));
+  $("#cuList").innerHTML = list.length ? list.map(c => `
+    <button class="adm-row ${c.uid === cuSel ? "sel" : ""}" data-cuid="${c.uid}">
+      <span class="cu-av">${c.photo ? `<img src="${esc(c.photo)}" alt="">` : esc((c.name || c.email || "?").charAt(0).toUpperCase())}</span>
+      <span class="adm-row-txt"><strong>${esc(c.name || "—")} ${c.blocked ? `<span class="cu-badge cu-bl">🚫 Blocked</span>` : ""}${c.flags.length && !c.blocked ? `<span class="cu-badge">⚠️ ${c.flags.length}</span>` : ""}</strong>
+        <small>${esc(c.email)} · ${c.orders.length} order${c.orders.length === 1 ? "" : "s"}</small></span>
+      <span class="cu-paid">${money(c.paidTotal)}</span>
+    </button>`).join("") : `<p class="panel-sub">No customers here.</p>`;
+  renderCustomerDetail(list0);
+}
+async function renderCustomerDetail(list0) {
+  const box = $("#cuDetail"), c = (list0 || customerList()).find(x => x.uid === cuSel);
+  if (!c) { box.innerHTML = `<p class="panel-sub">Select a customer.</p>`; return; }
+  if (cuNote.uid !== c.uid) { cuNote = { uid: c.uid, text: "…" }; NX.loadCustomerNote(c.uid).then(t => { cuNote = { uid: c.uid, text: t }; if (cuSel === c.uid) renderCustomerDetail(); }); }
+  const bk = blockedKeys(), d = (t) => t ? new Date(t).toLocaleDateString() : "—";
+  box.innerHTML = `
+    <div class="adm-d-head">
+      <div class="cu-head"><span class="cu-av lg">${c.photo ? `<img src="${esc(c.photo)}" alt="">` : esc((c.name || c.email || "?").charAt(0).toUpperCase())}</span>
+        <div><h3>${esc(c.name || "—")}</h3><small class="muted-inline">${esc(c.email)}</small></div></div>
+      ${c.blocked ? `<span class="status st-bad">🚫 Blocked</span>` : ""}
+    </div>
+    ${c.blocked ? `<div class="pay-warn">Blocked ${new Date(c.blocked.at).toLocaleString()} by ${esc(c.blocked.by)}${c.blocked.reason ? ` — “${esc(c.blocked.reason)}”` : ""}</div>` : ""}
+    ${c.flags.length ? `<div class="cu-flags">${c.flags.map(f => `<span>${esc(f)}</span>`).join("")}</div>` : ""}
+    <div class="cu-stats">
+      <div><small>Paid total</small><strong>${money(c.paidTotal)}</strong></div>
+      <div><small>Paid orders</small><strong>${c.paidCount}</strong></div>
+      <div><small>Completed</small><strong>${c.completed}</strong></div>
+      <div><small>Cancelled</small><strong>${c.cancelled}</strong></div>
+      <div><small>Unpaid</small><strong>${c.unpaid}</strong></div>
+      <div><small>Disputes</small><strong>${c.disputes}</strong></div>
+    </div>
+    <div class="od-kv">
+      <div><span>Joined</span><strong>${d(c.joined)}</strong></div>
+      <div><span>First order</span><strong>${d(c.first)}</strong></div>
+      <div><span>Last order</span><strong>${d(c.last)}</strong></div>
+      <div><span>Avg. order</span><strong>${c.paidCount ? money(c.paidTotal / c.paidCount) : "—"}</strong></div>
+    </div>
+    <h4 class="adm-h">Game accounts</h4>
+    ${c.keys.length ? `<div class="cu-keys">${c.keys.map(k => `<span class="${bk.has(k) ? "kb" : ""} ${c.shared.includes(k) ? "ks" : ""}">${esc(k)}${bk.has(k) ? " 🚫" : ""}${c.shared.includes(k) ? " ⚠️ shared" : ""}</span>`).join("")}</div>` : `<p class="panel-sub">—</p>`}
+    <h4 class="adm-h">Private note (owners only)</h4>
+    <textarea id="cuNoteTxt" rows="2" maxlength="1000" placeholder="e.g. good customer / paid late / suspicious…">${esc(cuNote.text === "…" ? "" : cuNote.text)}</textarea>
+    <button class="btn btn-ghost btn-sm" data-cuact="note">Save note</button>
+    <h4 class="adm-h">Orders</h4>
+    <div class="cu-orders">${c.orders.slice().sort((a, b) => b.createdAt - a.createdAt).map(o => `
+      <a href="#" data-openorder="${o.id}"><span>#${shortId(o.id)} · ${new Date(o.createdAt).toLocaleDateString()}</span>${pill(o.status)}<b>${money(o.total)}</b></a>`).join("") || `<p class="panel-sub">No orders yet.</p>`}</div>
+    <div class="adm-actions" style="margin-top:16px">
+      ${c.blocked ? `<button class="btn btn-ghost" data-cuact="unblock">✅ Unblock customer</button>`
+                  : `<button class="btn btn-danger" data-cuact="block">🚫 Block customer</button>`}
+    </div>`;
+}
+document.addEventListener("click", async e => {
+  const t = e.target.closest("[data-cu]"); if (t) { cuTab = t.dataset.cu; renderCustomers(); return; }
+  const r = e.target.closest("[data-cuid]"); if (r) { cuSel = r.dataset.cuid; renderCustomers(); return; }
+  const a = e.target.closest("[data-cuact]"); if (!a) return;
+  const c = customerList().find(x => x.uid === cuSel); if (!c) return;
+  const who = `${c.name || "—"} <${c.email}>`;
+  a.disabled = true;
+  try {
+    if (a.dataset.cuact === "note") {
+      const text = $("#cuNoteTxt").value.trim(); await NX.saveCustomerNote(c.uid, text); cuNote = { uid: c.uid, text };
+      NX.logActivity("customer.note", { target: "customer", targetId: c.uid, summary: `${who}: ${text.slice(0, 80)}` }); toast("📝 Note saved");
+    }
+    if (a.dataset.cuact === "block") {
+      const reason = prompt(`Block ${who}?\n\nThey won't be able to place new orders (account, email and their game accounts are blocked).\nReason (only you will see it):`, "");
+      if (reason === null) { a.disabled = false; return; }
+      await NX.blockCustomer(c, reason, c.keys);
+      NX.logActivity("customer.blocked", { target: "customer", targetId: c.uid, summary: who, details: { reason, accounts: c.keys } });
+      toast("🚫 Customer blocked");
+    }
+    if (a.dataset.cuact === "unblock") {
+      if (!confirm(`Unblock ${who}?`)) { a.disabled = false; return; }
+      await NX.unblockCustomer(c.blocked);
+      NX.logActivity("customer.unblocked", { target: "customer", targetId: c.uid, summary: who });
+      toast("✅ Customer unblocked");
+    }
+  } catch (err) { console.error(err); toast("Couldn't update — check the latest firestore rules are published."); }
+  a.disabled = false;
+});
+document.addEventListener("input", e => { if (e.target.id === "cuSearch") { cuQ = e.target.value.trim(); renderCustomers(); } });
+
 /* ---------- 👥 Team (owners only) ---------- */
 const PERM_LABEL = { payments: "💰 Payments (confirm / reject / cancel unpaid)", orders: "🛒 Orders (deliver, disputes, complete)",
                      support: "💬 Support", prices: "💲 Prices", reviews: "⭐ Reviews" };
@@ -430,6 +581,7 @@ const ACT_LABEL = {
   "order.cancelled": "✕ Cancelled order", "order.remove_from_count": "🚫 Removed order from store count", "order.count_again": "✅ Counted order again",
   "review.deleted": "🗑 Deleted review", "review.restored": "↩ Restored review", "prices.changed": "💲 Changed prices", "prices.reset": "💲 Reset prices",
   "support.closed": "💬 Closed conversation", "support.reopened": "💬 Reopened conversation",
+  "customer.blocked": "🚫 Blocked customer", "customer.unblocked": "✅ Unblocked customer", "customer.note": "📝 Customer note",
   "team.added": "👥 Added team member", "team.permissions_changed": "👥 Changed permissions", "team.removed": "👥 Removed team member",
 };
 let acts = [], actStarted = false, actWho = "all", actKind = "all", actQ = "";
@@ -437,7 +589,7 @@ function startActivity() { if (actStarted) return renderActivity(); actStarted =
 function renderActivity() {
   const people = [...new Set(acts.map(a => a.by))];
   $("#actWho").innerHTML = `<option value="all">Everyone</option>` + people.map(p => `<option ${p === actWho ? "selected" : ""}>${esc(p)}</option>`).join("");
-  const kinds = [["all", "All actions"], ["order", "Orders"], ["review", "Reviews"], ["prices", "Prices"], ["support", "Support"], ["team", "Team"], ["admin", "Logins"]];
+  const kinds = [["all", "All actions"], ["order", "Orders"], ["review", "Reviews"], ["prices", "Prices"], ["support", "Support"], ["customer", "Customers"], ["team", "Team"], ["admin", "Logins"]];
   $("#actKind").innerHTML = kinds.map(([k, l]) => `<option value="${k}" ${k === actKind ? "selected" : ""}>${l}</option>`).join("");
   const q = actQ.toLowerCase();
   const list = acts.filter(a => (actWho === "all" || a.by === actWho) && (actKind === "all" || a.action.startsWith(actKind + "."))
@@ -580,15 +732,16 @@ function startSupport() {
 
 const VIEW_ALLOWED = {
   orders: () => NX.can("orders") || NX.can("payments"), support: () => NX.can("support"), prices: () => NX.can("prices"),
-  reviews: () => NX.can("reviews"), team: () => NX.isOwner(), activity: () => NX.isOwner(),
+  reviews: () => NX.can("reviews"), customers: () => NX.isOwner(), team: () => NX.isOwner(), activity: () => NX.isOwner(),
 };
-const VIEW_BOX = { orders: "#admOrders", support: "#admSupport", prices: "#admPrices", reviews: "#admReviews", team: "#admTeam", activity: "#admActivity" };
+const VIEW_BOX = { orders: "#admOrders", support: "#admSupport", prices: "#admPrices", reviews: "#admReviews", customers: "#admCustomers", team: "#admTeam", activity: "#admActivity" };
 function openView(v) {
   $$(".adm-view").forEach(x => x.classList.toggle("active", x.dataset.view === v));
   Object.entries(VIEW_BOX).forEach(([k, sel]) => { $(sel).hidden = k !== v; });
   if (v === "prices") renderPrices();
   if (v === "reviews") loadAdminReviews();
   if (v === "activity") startActivity();
+  if (v === "customers") startCustomers();
 }
 function setupViews() {
   $$(".adm-view").forEach(b => { b.hidden = !VIEW_ALLOWED[b.dataset.view](); });

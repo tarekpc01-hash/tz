@@ -185,6 +185,37 @@ const NX = (() => {
       return s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.createdAt - a.createdAt);
     } catch (e) { console.error(e); return []; }
   }
+  /* ---------- customers + blocking (owners only) ---------- */
+  async function loadUsers() {
+    try { const s = await db.collection("users").limit(2000).get(); return s.docs.map(d => ({ uid: d.id, ...d.data() })); }
+    catch (e) { console.error(e); return []; }
+  }
+  const watchBlocked = (cb) => db.collection("blocked").onSnapshot(s => cb(s.docs.map(d => ({ id: d.id, ...d.data() }))), e => { console.error(e); cb([]); });
+  async function setBlockedKeys(add, remove) {
+    const ref = db.collection("blocked").doc("accounts"), d = await ref.get();
+    const keys = new Set(d.exists ? (d.data().keys || []) : []);
+    add.forEach(k => keys.add(k)); remove.forEach(k => keys.delete(k));
+    await ref.set({ keys: [...keys], updatedAt: Date.now() });
+  }
+  async function blockCustomer(c, reason, accountKeys) {
+    const rec = { uid: c.uid, email: (c.email || "").toLowerCase(), name: c.name || "", reason: reason || "", accountKeys,
+                  at: Date.now(), by: user.email.toLowerCase() };
+    await db.collection("blocked").doc("uid_" + c.uid).set(rec);
+    if (rec.email) await db.collection("blocked").doc("email_" + rec.email).set(rec);
+    if (accountKeys.length) await setBlockedKeys(accountKeys, []);
+  }
+  async function unblockCustomer(rec) {
+    await db.collection("blocked").doc("uid_" + rec.uid).delete();
+    if (rec.email) await db.collection("blocked").doc("email_" + rec.email).delete();
+    if ((rec.accountKeys || []).length) await setBlockedKeys([], rec.accountKeys);
+  }
+  async function amIBlocked() {
+    if (!user) return false;
+    try { const d = await db.collection("blocked").doc("uid_" + user.uid).get(); return d.exists; } catch { return false; }
+  }
+  const loadCustomerNote = async (uid) => { try { const d = await db.collection("customerNotes").doc(uid).get(); return d.exists ? d.data().text || "" : ""; } catch { return ""; } };
+  const saveCustomerNote = (uid, text) => db.collection("customerNotes").doc(uid).set({ text, updatedAt: Date.now(), by: user.email.toLowerCase() });
+
   /* ---------- team (owners only) ---------- */
   const staffCol = () => db.collection("staff");
   const watchStaff = (cb) => staffCol().onSnapshot(s => cb(s.docs.map(d => ({ email: d.id, ...d.data() }))), e => { console.error(e); cb([]); });
@@ -272,7 +303,8 @@ const NX = (() => {
 
   return {
     enabled, onAuth, get user() { return user; }, get profile() { return profile; }, isAdmin, isAdminEmail, isOwner, can, PERMS, get staff() { return staff; }, loadStaff,
-    watchStaff, setStaff, removeStaff, logActivity, watchActivity, sendVerification, reloadUser,
+    watchStaff, setStaff, removeStaff, logActivity, watchActivity,
+    loadUsers, watchBlocked, blockCustomer, unblockCustomer, amIBlocked, loadCustomerNote, saveCustomerNote, sendVerification, reloadUser,
     errText, signUp, signIn, signInGoogle, resetPassword, signOut, saveProfile,
     createOrder, watchMyOrders, watchOrder, updateOrder, submitPayment, cancelOrder, markReceived, openDispute,
     watchMessages, sendMessage, createTicket, watchMyTickets, watchAllTickets, watchTicketMessages, sendTicketMessage, setTicketStatus, loadReviews, addReview, deleteReview, restoreReview, loadDeletedReviews, addAutoReview, loadSales, addSales, setStats, loadPrices, savePrices, watchAllOrders, notifyOwner,
